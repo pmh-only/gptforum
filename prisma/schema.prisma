@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  channelId String   @unique
+  createdAt DateTime @default(now())
+
+  chats        Chat[]
+  participants Participant[]
+
+  @@index([channelId])
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  type      ChatType
+  message   String   @db.LongText
+  createdAt DateTime @default(now())
+
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
+}
+
+model Participant {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  isAdmin   Boolean
+  createdAt DateTime @default(now())
+
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId, userId])
+}
+
+// ---
+
+enum ChatType {
+  USER
+  ASSISTANT
+}

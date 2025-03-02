@@ -11,10 +11,13 @@ COPY package.json \
 
 RUN pnpm i --frozen-lockfile
 
+COPY prisma/ prisma/
+RUN pnpm prisma generate
+
 COPY tsconfig.json .
 COPY src/ src/
 
-RUN npx tsc
+RUN pnpm tsc
 
 FROM alpine AS resolve
 
@@ -39,7 +42,9 @@ ARG group=1000
 USER $user:$group
 WORKDIR /app
 
-COPY --from=build /app/dist dist
 COPY --from=resolve /app/node_modules node_modules
+COPY --from=build /app/node_modules/.prisma/client node_modules/.prisma/client
+
+COPY --from=build /app/dist dist
 
 ENTRYPOINT ["/usr/bin/node", "dist/main.js"]

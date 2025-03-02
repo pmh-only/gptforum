@@ -1,2 +1,3 @@
-import 'dotenv/config'
+import './ConfigUtils'
 import './DiscordClient'
+import './ChatEventHandler'
