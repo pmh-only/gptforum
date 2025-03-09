@@ -1,8 +1,14 @@
-import { ChannelType, ForumThreadChannel, Message } from 'discord.js'
+import {
+  ChannelType,
+  ForumThreadChannel,
+  Message,
+  PublicThreadChannel
+} from 'discord.js'
 import { config } from './ConfigUtils'
 import { Conversation } from './Conversation'
 import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
+import { Chat } from '@prisma/client'
 
 export class ChatEventHandler {
   private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')
@@ -28,7 +34,7 @@ export class ChatEventHandler {
   private readonly alreadySentMessages: Message[] = []
 
   private async handle() {
-    const conversation = await this.fetchConversation(this.message)
+    const conversation = await this.fetchConversation()
     const isPermissionDenied = await conversation.chats
       .addUserMessage(this.message)
       .then(() => false)
@@ -42,24 +48,42 @@ export class ChatEventHandler {
     await this.initializeResponseMessage()
 
     const chats = await conversation.chats.getAll()
+    if (conversation.isStarter) void this.applyConversationSummary(chats)
+
     const completionStream = await this.openai.startCompletion(chats)
     const response = await this.iterateOverCompletionStream(completionStream)
 
     await conversation.chats.addAssistantMessage(response)
   }
 
-  private async fetchConversation(message: Message) {
+  private async fetchConversation() {
     const fetchedConversation = await Conversation.fetchFromChannel(
-      message.channel
+      this.channel
     ).catch((err: Error) => err)
 
     if (fetchedConversation instanceof NotFoundError)
       return await Conversation.createFromChannel(
-        message.channel,
-        message.author
+        this.message.channel,
+        this.message.author
       )
 
     return fetchedConversation as Conversation
+  }
+
+  private async applyConversationSummary(chats: Chat[]) {
+    const tagChoices = await this.channel.parent?.availableTags.map(
+      (v) => `${v.name}:${v.id}`
+    )
+
+    const summary = await this.openai.startGeneratingSummary(chats, tagChoices)
+    const channel = this.message.channel as PublicThreadChannel<true>
+
+    if (summary === undefined) return
+
+    await channel.edit({
+      name: `${channel.name} - ${summary.title}`.slice(0, 100),
+      appliedTags: summary.tags?.map((v) => v.split(':')[1])
+    })
   }
 
   private async handlePermissionDenied() {

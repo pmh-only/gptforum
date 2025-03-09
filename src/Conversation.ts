@@ -9,7 +9,7 @@ import { ParticipantsGuard } from './ParticipantsGuard'
 export class Conversation {
   public constructor(
     private readonly conversationId: number,
-    private readonly isStarter = false
+    public readonly isStarter = false
   ) {}
 
   private readonly _participants = new Participants(this.conversationId)

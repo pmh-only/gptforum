@@ -13,7 +13,9 @@ class ConfigUtils {
     string,
     number | string
   > = {
-    BUFFER_SECOND: 1
+    BUFFER_SECOND: 2,
+    OPENAI_DEFAULT_MODEL: 'gpt-4o',
+    OPENAI_SUMMARY_MODEL: 'gpt-4o'
   }
 
   constructor() {
