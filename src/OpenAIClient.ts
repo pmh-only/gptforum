@@ -21,13 +21,27 @@ export class OpenAIClient {
 
   private readonly OPENAI_SUMMARY_MODEL = config.get('OPENAI_SUMMARY_MODEL')
 
+  private readonly OPENAI_DEFAULT_PROMPT = config.get('OPENAI_DEFAULT_PROMPT')
+
+  private readonly OPENAI_SUMMARY_PROMPT = config.get('OPENAI_SUMMARY_PROMPT')
+
   public async startCompletion(chats: Chat[]) {
     const messages = this.convertChatsToMessages(chats)
+
     const rawStream = await this.client.chat.completions.create({
       model: this.OPENAI_DEFAULT_MODEL,
       store: false,
-      messages,
-      stream: true
+      messages: [
+        {
+          role: 'system',
+          content: this.OPENAI_DEFAULT_PROMPT
+        },
+        ...messages
+      ],
+      stream: true,
+      stream_options: {
+        include_usage: true
+      }
     })
 
     return new OpenAIStream(rawStream).createBufferedCompletionStream()
@@ -51,10 +65,7 @@ export class OpenAIClient {
       messages: [
         {
           role: 'system',
-          content:
-            `- Summarize users message into single line less than 100 characters.\n` +
-            '- Choose less than 3 tags for categorize this conversation.\n' +
-            'Always respond in json format.'
+          content: this.OPENAI_SUMMARY_PROMPT
         },
         ...messages
       ],
