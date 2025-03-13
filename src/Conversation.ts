@@ -10,15 +10,20 @@ export class Conversation {
   public constructor(
     private readonly conversationId: number,
     public readonly isStarter = false
-  ) {}
+  ) {
+    this._participants = new Participants(this.conversationId)
+    this._chats = new Chats(this.conversationId, this.isStarter)
+    this.participants = new ParticipantsGuard(this._participants)
+    this.chats = new ChatsGuard(this._chats, this._participants)
+  }
 
-  private readonly _participants = new Participants(this.conversationId)
+  private readonly _participants: Participants
 
-  private readonly _chats = new Chats(this.conversationId, this.isStarter)
+  private readonly _chats: Chats
 
-  public readonly participants = new ParticipantsGuard(this._participants)
+  public readonly participants: ParticipantsGuard
 
-  public readonly chats = new ChatsGuard(this._chats, this._participants)
+  public readonly chats: ChatsGuard
 
   // ---
 

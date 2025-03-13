@@ -9,6 +9,7 @@ import { Conversation } from './Conversation'
 import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
 import { Chat } from '@prisma/client'
+import { OpenAIStreamData } from './OpenAIStream'
 
 export class ChatEventHandler {
   private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')
@@ -23,13 +24,15 @@ export class ChatEventHandler {
 
   // ---
 
-  private constructor(private readonly message: Message) {}
+  private constructor(private readonly message: Message) {
+    this.channel = this.message.channel as ForumThreadChannel
+  }
 
   private readonly DISCORD_MESSAGE_LENGTH_MAX = 2000
 
   private readonly openai = OpenAIClient.getInstance()
 
-  private readonly channel = this.message.channel as ForumThreadChannel
+  private readonly channel: ForumThreadChannel
 
   private readonly alreadySentMessages: Message[] = []
 
@@ -97,17 +100,28 @@ export class ChatEventHandler {
 
   private async initializeResponseMessage() {
     this.alreadySentMessages[0] = await this.message.reply({
-      content: '> <a:loading:1345739739700920353> Thinking...',
+      content: '> <a:loading:1349419254092529805> Thinking...',
       allowedMentions: {
         repliedUser: false
       }
     })
   }
 
-  private async iterateOverCompletionStream(stream: AsyncGenerator<string>) {
+  private async iterateOverCompletionStream(
+    stream: AsyncGenerator<OpenAIStreamData>
+  ) {
     let response = ''
 
-    for await (response of stream) {
+    for await (const streamData of stream) {
+      response =
+        `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
+        (streamData.metadata !== undefined
+          ? '\n' +
+            `> input: ${streamData.metadata.inputToken} tokens\n` +
+            `> output: ${streamData.metadata.outputToken} tokens\n` +
+            `> total: ${streamData.metadata.totalToken} tokens\n`
+          : '')
+
       await this.respondMessage(response)
     }
 
