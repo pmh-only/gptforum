@@ -8,6 +8,7 @@ import {
 import { config } from './ConfigUtils'
 import { ConfigIllegalError } from './Errors'
 import { ChatEventHandler } from './ChatEventHandler'
+import { logger } from './Logger'
 
 export class DiscordClient extends Client {
   private static readonly CLIENT_OPTIONS: ClientOptions = {
@@ -34,7 +35,7 @@ export class DiscordClient extends Client {
   }
 
   private async onReady() {
-    console.log((this.user?.username ?? 'gptforum') + ' is now ready.')
+    logger.info((this.user?.username ?? 'gptforum') + ' is now ready.')
     await this.checkConfigChannelIsValid()
   }
 

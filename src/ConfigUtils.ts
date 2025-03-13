@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import { ConfigIllegalError } from './Errors'
+import { logger } from './Logger'
 
 class ConfigUtils {
   private readonly REQUIRED_ENVIRONMENT_VARIABLES = [
@@ -14,8 +15,15 @@ class ConfigUtils {
     number | string
   > = {
     BUFFER_SECOND: 2,
+
     OPENAI_DEFAULT_MODEL: 'gpt-4o',
-    OPENAI_SUMMARY_MODEL: 'gpt-4o'
+    OPENAI_SUMMARY_MODEL: 'gpt-4o',
+
+    OPENAI_DEFAULT_PROMPT: '',
+    OPENAI_SUMMARY_PROMPT:
+      '- Summarize users message into single line less than 100 characters.\n' +
+      '- Choose less than 3 tags for categorize this conversation.\n' +
+      'Always respond in json format.'
   }
 
   constructor() {
@@ -64,9 +72,13 @@ class ConfigUtils {
     )
       return
 
-    console.log(
-      `Warning: Environment variable "${variableName}" is missing. ` +
-        `Using "${defaultValue}" as a default value`
+    logger.warn(
+      `Environment variable "${variableName}" is missing. ` +
+        `Using a default value: ` +
+        `${defaultValue}`
+          .split('\n')
+          .map((v, i, a) => (a.length > 1 ? `${i < 1 ? '\n' : ''}   ${v}` : v))
+          .join('\n')
     )
 
     process.env[variableName] = defaultValue.toString()
