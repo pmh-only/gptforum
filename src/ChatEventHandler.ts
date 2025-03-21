@@ -14,10 +14,11 @@ import { OpenAIStreamData } from './OpenAIStream'
 export class ChatEventHandler {
   private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')
 
-  public static handleMessageCreate(message: Message) {
+  public static async handleMessageCreate(message: Message) {
     if (message.channel.type !== ChannelType.PublicThread) return
     if (message.channel.parentId !== ChatEventHandler.DISCORD_CHANNEL) return
     if (message.author.bot) return
+    if (message.channel.flags.has('Pinned')) return
 
     new ChatEventHandler(message).handle()
   }
