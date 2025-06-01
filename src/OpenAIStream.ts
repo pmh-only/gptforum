@@ -27,6 +27,8 @@ export class OpenAIStream {
     let bufferFlushedAt = Date.now()
 
     for await (const chunk of this.rawStream) {
+      console.log(JSON.stringify(chunk))
+
       if (chunk.type === 'response.output_text.delta') buffer.push(chunk.delta)
 
       if (chunk.type === 'response.completed') {

@@ -131,12 +131,12 @@ export class ChatEventHandler {
   }
 
   private sliceStringByDiscordLimit(str: string): string[] {
-    const originalSlices = str.split(' ')
+    const originalSlices = str.split('\n')
     const resultSlices: string[] = []
 
     let intermediateSlice = ''
     for (const slice of originalSlices) {
-      const futureSlice = (intermediateSlice + ' ' + slice).trim()
+      const futureSlice = (intermediateSlice + '\n' + slice).trim()
 
       if (futureSlice.length <= this.DISCORD_MESSAGE_LENGTH_MAX) {
         intermediateSlice = futureSlice

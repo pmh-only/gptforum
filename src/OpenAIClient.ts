@@ -28,6 +28,7 @@ export class OpenAIClient {
     const rawStream = await this.client.responses.create({
       model: this.OPENAI_DEFAULT_MODEL,
       store: true,
+      tools: [{ type: 'web_search_preview' }],
       input: [
         {
           role: 'system',
