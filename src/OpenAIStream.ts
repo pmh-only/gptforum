@@ -6,7 +6,9 @@ export interface OpenAIStreamData {
   message: string
   isGenerating: boolean
   metadata?: {
+    model: string
     inputToken: number
+    reasoningToken: number
     outputToken: number
     totalToken: number
   }
@@ -27,13 +29,14 @@ export class OpenAIStream {
     let bufferFlushedAt = Date.now()
 
     for await (const chunk of this.rawStream) {
-      console.log(JSON.stringify(chunk))
-
       if (chunk.type === 'response.output_text.delta') buffer.push(chunk.delta)
 
       if (chunk.type === 'response.completed') {
         output.metadata = {
+          model: chunk.response.model,
           inputToken: chunk.response.usage?.input_tokens ?? 0,
+          reasoningToken:
+            chunk.response.usage?.output_tokens_details.reasoning_tokens ?? 0,
           outputToken: chunk.response.usage?.output_tokens ?? 0,
           totalToken: chunk.response.usage?.total_tokens ?? 0
         }

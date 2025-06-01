@@ -14,6 +14,8 @@ model Conversation {
   ownerId   String
   createdAt DateTime @default(now())
 
+  model String
+
   chats Chat[]
 
   @@index([channelId])

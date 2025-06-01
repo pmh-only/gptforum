@@ -10,6 +10,7 @@ import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
 import { OpenAIStreamData } from './OpenAIStream'
 import { Chat } from './Chat'
+import { ModelSelection } from './ModelSelectiont'
 
 export class ChatEventHandler {
   private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')
@@ -45,17 +46,18 @@ export class ChatEventHandler {
       .then(() => false)
       .catch(() => true)
 
-    if (isPermissionDenied) {
-      this.handlePermissionDenied()
-      return
-    }
+    if (isPermissionDenied) return
 
     await this.initializeResponseMessage()
 
     const chats = await conversation.getAllChats()
     if (conversation.isStarter) void this.applyConversationSummary(chats)
 
-    const completionStream = await this.openai.startCompletion(chats)
+    const completionStream = await this.openai.startCompletion(
+      conversation.model,
+      chats
+    )
+
     const response = await this.iterateOverCompletionStream(completionStream)
 
     await conversation.addOpenAIResponse(response)
@@ -66,11 +68,15 @@ export class ChatEventHandler {
       this.channel
     ).catch((err: Error) => err)
 
-    if (fetchedConversation instanceof NotFoundError)
+    if (fetchedConversation instanceof NotFoundError) {
+      const model = await new ModelSelection(this.channel).handle()
+
       return await Conversation.createFromChannel(
         this.message.channel,
-        this.message.author
+        this.message.author,
+        model
       )
+    }
 
     return fetchedConversation as Conversation
   }
@@ -91,18 +97,9 @@ export class ChatEventHandler {
     })
   }
 
-  private async handlePermissionDenied() {
-    this.message.reply({
-      content: '> Permission denied',
-      allowedMentions: {
-        repliedUser: false
-      }
-    })
-  }
-
   private async initializeResponseMessage() {
     this.alreadySentMessages[0] = await this.message.reply({
-      content: '> <a:loading:1349419254092529805> Thinking...',
+      content: '> <a:loading:1349419254092529805> 생각중...',
       allowedMentions: {
         repliedUser: false
       }
@@ -119,9 +116,13 @@ export class ChatEventHandler {
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
         (streamData.metadata !== undefined
           ? '\n' +
-            `> input: ${streamData.metadata.inputToken} tokens\n` +
-            `> output: ${streamData.metadata.outputToken} tokens\n` +
-            `> total: ${streamData.metadata.totalToken} tokens\n`
+            `> **${streamData.metadata.model}**\n` +
+            `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
+            (streamData.metadata.reasoningToken > 0
+              ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
+              : '') +
+            `> 출력: ${streamData.metadata.outputToken - (streamData.metadata.reasoningToken ?? 0)} 토큰\n` +
+            `> 총합: ${streamData.metadata.totalToken} 토큰\n`
           : '')
 
       await this.respondMessage(response)

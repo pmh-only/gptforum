@@ -13,12 +13,14 @@ export class Conversation implements ConversationEntity {
     this.createdAt = entity.createdAt
     this.ownerId = entity.ownerId
     this.id = entity.id
+    this.model = entity.model
   }
 
   public readonly channelId: string
   public readonly createdAt: Date
   public readonly ownerId: string
   public readonly id: number
+  public readonly model: string
 
   // ---
 
@@ -36,11 +38,16 @@ export class Conversation implements ConversationEntity {
     return new Conversation(conversation)
   }
 
-  public static async createFromChannel(channel: Channel, owner: User) {
+  public static async createFromChannel(
+    channel: Channel,
+    owner: User,
+    model: string
+  ) {
     const conversation = await prisma.conversation.create({
       data: {
         channelId: channel.id,
-        ownerId: owner.id
+        ownerId: owner.id,
+        model
       }
     })
 

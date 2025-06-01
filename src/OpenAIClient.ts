@@ -24,11 +24,10 @@ export class OpenAIClient {
 
   private readonly OPENAI_SUMMARY_PROMPT = config.get('OPENAI_SUMMARY_PROMPT')
 
-  public async startCompletion(chats: Chat[]) {
+  public async startCompletion(model: string, chats: Chat[]) {
     const rawStream = await this.client.responses.create({
-      model: this.OPENAI_DEFAULT_MODEL,
+      model: model,
       store: true,
-      tools: [{ type: 'web_search_preview' }],
       input: [
         {
           role: 'system',
