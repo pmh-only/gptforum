@@ -1,10 +1,10 @@
 import { Chat, ChatType } from '@prisma/client'
 import OpenAI from 'openai'
-import { ChatCompletionMessageParam } from 'openai/resources'
-import { zodResponseFormat } from 'openai/helpers/zod'
+import { zodTextFormat } from 'openai/helpers/zod'
 import { OpenAIStream } from './OpenAIStream'
 import { config } from './ConfigUtils'
 import { z } from 'zod'
+import { ResponseInput } from 'openai/resources/responses/responses.mjs'
 
 export class OpenAIClient {
   private static readonly instance = new OpenAIClient()
@@ -28,20 +28,17 @@ export class OpenAIClient {
   public async startCompletion(chats: Chat[]) {
     const messages = this.convertChatsToMessages(chats)
 
-    const rawStream = await this.client.chat.completions.create({
+    const rawStream = await this.client.responses.create({
       model: this.OPENAI_DEFAULT_MODEL,
-      store: false,
-      messages: [
+      store: true,
+      input: [
         {
           role: 'system',
           content: this.OPENAI_DEFAULT_PROMPT
         },
         ...messages
       ],
-      stream: true,
-      stream_options: {
-        include_usage: true
-      }
+      stream: true
     })
 
     return new OpenAIStream(rawStream).createBufferedCompletionStream()
@@ -59,35 +56,37 @@ export class OpenAIClient {
   > {
     const messages = this.convertChatsToMessages(chats)
 
-    const completion = await this.client.chat.completions.create({
+    const completion = await this.client.responses.create({
       model: this.OPENAI_SUMMARY_MODEL,
       store: false,
-      messages: [
+      input: [
         {
           role: 'system',
           content: this.OPENAI_SUMMARY_PROMPT
         },
         ...messages
       ],
-      response_format: zodResponseFormat(
-        z.object({
-          title: z.string(),
-          ...(tagChoices !== undefined && tagChoices.length > 0
-            ? { tags: z.array(z.enum(tagChoices as [string, ...string[]])) }
-            : {})
-        }),
-        'summary'
-      )
+      text: {
+        format: zodTextFormat(
+          z.object({
+            title: z.string(),
+            ...(tagChoices !== undefined && tagChoices.length > 0
+              ? { tags: z.array(z.enum(tagChoices as [string, ...string[]])) }
+              : {})
+          }),
+          'summary'
+        )
+      }
     })
 
-    return JSON.parse(completion.choices[0].message.content ?? 'undefined')
+    return JSON.parse(completion.output_text)
   }
 
   private readonly convertChatsToMessages = (chats: Chat[]) =>
     chats.map((chat) => ({
       role: this.convertChatTypeToMessageRole(chat.type),
       content: chat.message
-    })) as ChatCompletionMessageParam[]
+    })) as ResponseInput
 
   private readonly convertChatTypeToMessageRole = (chatType: ChatType) =>
     ({

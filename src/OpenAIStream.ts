@@ -1,6 +1,6 @@
-import { ChatCompletionChunk } from 'openai/resources'
 import { Stream } from 'openai/streaming'
 import { config } from './ConfigUtils'
+import { ResponseStreamEvent } from 'openai/resources/responses/responses.mjs'
 
 export interface OpenAIStreamData {
   message: string
@@ -13,7 +13,7 @@ export interface OpenAIStreamData {
 }
 
 export class OpenAIStream {
-  constructor(private readonly rawStream: Stream<ChatCompletionChunk>) {}
+  constructor(private readonly rawStream: Stream<ResponseStreamEvent>) {}
 
   private readonly BUFFER_SECOND = config.getInt('BUFFER_SECOND')
 
@@ -26,13 +26,14 @@ export class OpenAIStream {
 
     let bufferFlushedAt = Date.now()
 
-    for await (const chunk of this.createCompletionStream()) {
-      if (chunk.content !== undefined) buffer.push(chunk.content)
-      if (chunk.usage !== undefined) {
+    for await (const chunk of this.rawStream) {
+      if (chunk.type === 'response.output_text.delta') buffer.push(chunk.delta)
+
+      if (chunk.type === 'response.completed') {
         output.metadata = {
-          inputToken: chunk.usage.prompt_tokens,
-          outputToken: chunk.usage.completion_tokens,
-          totalToken: chunk.usage.total_tokens
+          inputToken: chunk.response.usage?.input_tokens ?? 0,
+          outputToken: chunk.response.usage?.output_tokens ?? 0,
+          totalToken: chunk.response.usage?.total_tokens ?? 0
         }
       }
 
@@ -48,14 +49,5 @@ export class OpenAIStream {
     output.isGenerating = false
 
     yield output
-  }
-
-  private async *createCompletionStream() {
-    for await (const chunk of this.rawStream) {
-      yield {
-        content: chunk.choices?.[0]?.delta?.content ?? undefined,
-        usage: chunk.usage ?? undefined
-      }
-    }
   }
 }
