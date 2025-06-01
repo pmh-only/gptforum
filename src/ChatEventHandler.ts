@@ -19,6 +19,7 @@ export class ChatEventHandler {
     if (message.channel.parentId !== ChatEventHandler.DISCORD_CHANNEL) return
     if (message.author.bot) return
     if (message.channel.flags.has('Pinned')) return
+    if (message.content.match(/^[#/]/)) return
 
     new ChatEventHandler(message).handle()
   }

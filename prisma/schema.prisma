@@ -11,10 +11,10 @@ datasource db {
 model Conversation {
   id        Int      @id @default(autoincrement())
   channelId String   @unique
+  ownerId   String
   createdAt DateTime @default(now())
 
-  chats        Chat[]
-  participants Participant[]
+  chats Chat[]
 
   @@index([channelId])
 }
@@ -29,18 +29,6 @@ model Chat {
   conversation   Conversation @relation(fields: [conversationId], references: [id])
 
   @@index([conversationId])
-}
-
-model Participant {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  isAdmin   Boolean
-  createdAt DateTime @default(now())
-
-  conversationId Int
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-
-  @@index([conversationId, userId])
 }
 
 // ---
