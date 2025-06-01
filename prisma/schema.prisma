@@ -22,7 +22,7 @@ model Conversation {
 model Chat {
   id        Int      @id @default(autoincrement())
   type      ChatType
-  message   String   @db.LongText
+  content   String   @db.LongText
   createdAt DateTime @default(now())
 
   conversationId Int

@@ -1,10 +1,9 @@
-import { Chat, ChatType } from '@prisma/client'
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
 import { OpenAIStream } from './OpenAIStream'
 import { config } from './ConfigUtils'
 import { z } from 'zod'
-import { ResponseInput } from 'openai/resources/responses/responses.mjs'
+import { Chat } from './Chat'
 
 export class OpenAIClient {
   private static readonly instance = new OpenAIClient()
@@ -26,8 +25,6 @@ export class OpenAIClient {
   private readonly OPENAI_SUMMARY_PROMPT = config.get('OPENAI_SUMMARY_PROMPT')
 
   public async startCompletion(chats: Chat[]) {
-    const messages = this.convertChatsToMessages(chats)
-
     const rawStream = await this.client.responses.create({
       model: this.OPENAI_DEFAULT_MODEL,
       store: true,
@@ -36,7 +33,7 @@ export class OpenAIClient {
           role: 'system',
           content: this.OPENAI_DEFAULT_PROMPT
         },
-        ...messages
+        ...chats.map((v) => v.convertToOpenAIResponse())
       ],
       stream: true
     })
@@ -54,8 +51,6 @@ export class OpenAIClient {
       }
     | undefined
   > {
-    const messages = this.convertChatsToMessages(chats)
-
     const completion = await this.client.responses.create({
       model: this.OPENAI_SUMMARY_MODEL,
       store: false,
@@ -64,7 +59,7 @@ export class OpenAIClient {
           role: 'system',
           content: this.OPENAI_SUMMARY_PROMPT
         },
-        ...messages
+        ...chats.map((v) => v.convertToOpenAIResponse())
       ],
       text: {
         format: zodTextFormat(
@@ -81,16 +76,4 @@ export class OpenAIClient {
 
     return JSON.parse(completion.output_text)
   }
-
-  private readonly convertChatsToMessages = (chats: Chat[]) =>
-    chats.map((chat) => ({
-      role: this.convertChatTypeToMessageRole(chat.type),
-      content: chat.message
-    })) as ResponseInput
-
-  private readonly convertChatTypeToMessageRole = (chatType: ChatType) =>
-    ({
-      [ChatType.ASSISTANT]: 'assistant',
-      [ChatType.USER]: 'user'
-    })[chatType]
 }

@@ -8,8 +8,8 @@ import { config } from './ConfigUtils'
 import { Conversation } from './Conversation'
 import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
-import { Chat } from '@prisma/client'
 import { OpenAIStreamData } from './OpenAIStream'
+import { Chat } from './Chat'
 
 export class ChatEventHandler {
   private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')
@@ -40,8 +40,8 @@ export class ChatEventHandler {
 
   private async handle() {
     const conversation = await this.fetchConversation()
-    const isPermissionDenied = await conversation.chats
-      .addUserMessage(this.message)
+    const isPermissionDenied = await conversation
+      .addDiscordMesssage(this.message)
       .then(() => false)
       .catch(() => true)
 
@@ -52,13 +52,13 @@ export class ChatEventHandler {
 
     await this.initializeResponseMessage()
 
-    const chats = await conversation.chats.getAll()
+    const chats = await conversation.getAllChats()
     if (conversation.isStarter) void this.applyConversationSummary(chats)
 
     const completionStream = await this.openai.startCompletion(chats)
     const response = await this.iterateOverCompletionStream(completionStream)
 
-    await conversation.chats.addAssistantMessage(response)
+    await conversation.addOpenAIResponse(response)
   }
 
   private async fetchConversation() {
@@ -76,7 +76,7 @@ export class ChatEventHandler {
   }
 
   private async applyConversationSummary(chats: Chat[]) {
-    const tagChoices = await this.channel.parent?.availableTags.map(
+    const tagChoices = this.channel.parent?.availableTags.map(
       (v) => `${v.name}:${v.id}`
     )
 
