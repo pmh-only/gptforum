@@ -10,7 +10,7 @@ import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
 import { OpenAIStreamData } from './OpenAIStream'
 import { Chat } from './Chat'
-import { ModelSelection } from './ModelSelectiont'
+import { ModelSelection } from './ModelSelection'
 
 export class ChatEventHandler {
   private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')

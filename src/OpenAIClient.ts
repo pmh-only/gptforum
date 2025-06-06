@@ -54,19 +54,21 @@ export class OpenAIClient {
     const completion = await this.client.responses.create({
       model: this.OPENAI_SUMMARY_MODEL,
       store: false,
-      input: [
-        {
-          role: 'system',
-          content: this.OPENAI_SUMMARY_PROMPT
-        },
-        ...chats.map((v) => v.convertToOpenAIResponse())
-      ],
+      input: chats.map((v) => v.convertToOpenAIResponse()),
       text: {
         format: zodTextFormat(
           z.object({
-            title: z.string(),
+            title: z.string({
+              description:
+                'Summarize users message into single line less than 100 characters'
+            }),
             ...(tagChoices !== undefined && tagChoices.length > 0
-              ? { tags: z.array(z.enum(tagChoices as [string, ...string[]])) }
+              ? {
+                  tags: z.array(z.enum(tagChoices as [string, ...string[]]), {
+                    description:
+                      ' Choose less than 3 tags for categorize this conversation.'
+                  })
+                }
               : {})
           }),
           'summary'
