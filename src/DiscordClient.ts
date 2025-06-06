@@ -5,7 +5,6 @@ import {
   Events,
   GatewayIntentBits
 } from 'discord.js'
-import { config } from './ConfigUtils'
 import { ConfigIllegalError } from './Errors'
 import { ChatEventHandler } from './ChatEventHandler'
 import { logger } from './Logger'
@@ -24,6 +23,16 @@ export class DiscordClient extends Client {
 
   public static readonly getInstance = () => DiscordClient.instance
 
+  private static DISCORD_TOKEN =
+    process.env.DISCORD_TOKEN ??
+    logger.error('DISCORD_TOKEN NOT PROVIDED') ??
+    process.exit(-1)
+
+  private static DISCORD_CHANNEL =
+    process.env.DISCORD_CHANNEL ??
+    logger.error('DISCORD_CHANNEL NOT PROVIDED') ??
+    process.exit(-1)
+
   // ---
 
   private constructor() {
@@ -31,7 +40,7 @@ export class DiscordClient extends Client {
 
     this.on(Events.ClientReady, this.onReady.bind(this))
     this.on(Events.MessageCreate, ChatEventHandler.handleMessageCreate)
-    this.login(config.get('DISCORD_TOKEN'))
+    this.login(DiscordClient.DISCORD_TOKEN)
   }
 
   private async onReady() {
@@ -40,7 +49,7 @@ export class DiscordClient extends Client {
   }
 
   private async checkConfigChannelIsValid() {
-    const channel = await this.channels.fetch(config.get('DISCORD_CHANNEL'), {
+    const channel = await this.channels.fetch(DiscordClient.DISCORD_CHANNEL, {
       allowUnknownGuild: true
     })
 

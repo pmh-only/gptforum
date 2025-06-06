@@ -1,6 +1,6 @@
 import { Stream } from 'openai/streaming'
-import { config } from './ConfigUtils'
 import { ResponseStreamEvent } from 'openai/resources/responses/responses.mjs'
+import { logger } from './Logger'
 
 export interface OpenAIStreamData {
   message: string
@@ -17,7 +17,8 @@ export interface OpenAIStreamData {
 export class OpenAIStream {
   constructor(private readonly rawStream: Stream<ResponseStreamEvent>) {}
 
-  private readonly BUFFER_SECOND = config.getInt('BUFFER_SECOND')
+  private readonly BUFFER_SECOND =
+    parseInt(process.env.BUFFER_SECOND ?? '2') || 2
 
   public async *createBufferedCompletionStream(): AsyncGenerator<OpenAIStreamData> {
     const buffer: string[] = []
@@ -52,6 +53,8 @@ export class OpenAIStream {
 
     output.message = buffer.join('')
     output.isGenerating = false
+
+    logger.info('Resopnse stream finished')
 
     yield output
   }

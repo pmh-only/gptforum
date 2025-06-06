@@ -4,16 +4,19 @@ import {
   Message,
   PublicThreadChannel
 } from 'discord.js'
-import { config } from './ConfigUtils'
 import { Conversation } from './Conversation'
 import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
 import { OpenAIStreamData } from './OpenAIStream'
 import { Chat } from './Chat'
 import { ModelSelection } from './ModelSelection'
+import { logger } from './Logger'
 
 export class ChatEventHandler {
-  private static readonly DISCORD_CHANNEL = config.get('DISCORD_CHANNEL')
+  private static DISCORD_CHANNEL =
+    process.env.DISCORD_CHANNEL ??
+    logger.error('DISCORD_CHANNEL NOT PROVIDED') ??
+    process.exit(-1)
 
   public static async handleMessageCreate(message: Message) {
     if (message.channel.type !== ChannelType.PublicThread) return
@@ -21,6 +24,8 @@ export class ChatEventHandler {
     if (message.author.bot) return
     if (message.channel.flags.has('Pinned')) return
     if (message.content.match(/^[#/]/)) return
+
+    logger.info('condition met. create new handler instance.')
 
     new ChatEventHandler(message).handle()
   }

@@ -6,11 +6,14 @@ import {
   StringSelectMenuOptionBuilder
 } from 'discord.js'
 import crypto from 'node:crypto'
+import { logger } from './Logger'
 
 export class ModelSelection {
   constructor(private readonly channel: ForumThreadChannel) {}
 
   public async handle() {
+    logger.info('Start model selection.')
+
     const customId = crypto.randomUUID()
     const select = new StringSelectMenuBuilder()
       .setCustomId(customId)
@@ -64,6 +67,8 @@ export class ModelSelection {
       filter: (i) => i.customId === customId,
       componentType: ComponentType.StringSelect
     })
+
+    logger.info('Model selection handler finished.')
 
     await interaction.update({})
     await message.delete()

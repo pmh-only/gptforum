@@ -1,4 +1,3 @@
-import './ConfigUtils'
 import './DiscordClient'
 import './ChatEventHandler'
 import { logger } from './Logger'

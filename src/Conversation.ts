@@ -3,6 +3,7 @@ import { prisma } from './Database'
 import { NotFoundError, NotPermittedError } from './Errors'
 import { ChatType, Conversation as ConversationEntity } from '@prisma/client'
 import { Chat } from './Chat'
+import { logger } from './Logger'
 
 export class Conversation implements ConversationEntity {
   public constructor(
@@ -58,6 +59,8 @@ export class Conversation implements ConversationEntity {
     const channel = message.channel as ForumThreadChannel
 
     if (message.author.id !== this.ownerId) {
+      logger.warn('Permit violation detected. ignore message.')
+
       throw new NotPermittedError(
         'User not permitted to attend this conversation'
       )
