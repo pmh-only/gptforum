@@ -137,20 +137,27 @@ export class ChatEventHandler {
   }
 
   private sliceStringByDiscordLimit(str: string): string[] {
-    const originalSlices = str.match(/```[\s\S]*?```|[^\n]+/g) ?? []
+    const originalSlices = str.split('\n')
     const resultSlices: string[] = []
 
     let intermediateSlice = ''
+
     for (const slice of originalSlices) {
       const futureSlice = (intermediateSlice + '\n' + slice).trim()
+      const isCodeBlockNotFinished =
+        intermediateSlice.split('```').length % 2 === 0
+      const maximumFeatureLenght =
+        this.DISCORD_MESSAGE_LENGTH_MAX - (isCodeBlockNotFinished ? 3 : 0)
 
-      if (futureSlice.length <= this.DISCORD_MESSAGE_LENGTH_MAX) {
+      if (futureSlice.length <= maximumFeatureLenght) {
         intermediateSlice = futureSlice
         continue
       }
 
+      intermediateSlice += isCodeBlockNotFinished ? '```' : ''
+
       resultSlices.push(intermediateSlice)
-      intermediateSlice = slice
+      intermediateSlice = (isCodeBlockNotFinished ? '```' : '') + slice
     }
 
     resultSlices.push(intermediateSlice)
@@ -161,8 +168,14 @@ export class ChatEventHandler {
   private async respondMessage(response: string) {
     const slicedCompletion = this.sliceStringByDiscordLimit(response)
 
-    for (const [sliceIdx, slice] of slicedCompletion.entries())
-      await this.upsertResponseMessage(sliceIdx, slice)
+    for (const [sliceIdx, slice] of slicedCompletion.entries()) {
+      const isCodeBlockNotFinished = slice.split('```').length % 2 === 0
+
+      await this.upsertResponseMessage(
+        sliceIdx,
+        slice + (isCodeBlockNotFinished ? '```' : '')
+      )
+    }
   }
 
   private async upsertResponseMessage(idx: number, content: string) {
