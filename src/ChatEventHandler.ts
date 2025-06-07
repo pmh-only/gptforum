@@ -137,7 +137,7 @@ export class ChatEventHandler {
   }
 
   private sliceStringByDiscordLimit(str: string): string[] {
-    const originalSlices = str.split('\n')
+    const originalSlices = str.match(/```[\s\S]*?```|[^\n]+/g) ?? []
     const resultSlices: string[] = []
 
     let intermediateSlice = ''
