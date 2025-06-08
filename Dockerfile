@@ -13,7 +13,10 @@ RUN bun prisma generate
 
 COPY src/ src/
 
-RUN bun build src/main.ts --compile --outfile gptforum
+RUN bun build src/main.ts \
+     --compile --minify \
+     --sourcemap --bytecode \
+     --outfile gptforum
 
 FROM alpine AS runtime
 
@@ -24,5 +27,6 @@ RUN apk add --no-cache libstdc++
 USER 1000:1000
 
 COPY --chown=1000:1000 --from=build /app/gptforum .
+COPY --chown=1000:1000 --from=build /app/node_modules/.prisma/client/libquery_engine* /tmp/prisma-engines/
 
 ENTRYPOINT [ "/app/gptforum" ]
