@@ -18,6 +18,14 @@ export class ChatEventHandler {
     logger.error('DISCORD_CHANNEL NOT PROVIDED') ??
     process.exit(-1)
 
+  private static DISCORD_EMOJI_PLACEHOLDER =
+    process.env.DISCORD_EMOJI_PLACEHOLDER ??
+    logger.warn(
+      'Loading animated emoji not provided. ' +
+        'you can download loading gif from internet and provide emoji id like DISCORD_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
+    ) ??
+    '<a:loading:1381148556462653490>'
+
   public static async handleMessageCreate(message: Message) {
     if (message.channel.type !== ChannelType.PublicThread) return
     if (message.channel.parentId !== ChatEventHandler.DISCORD_CHANNEL) return
@@ -104,7 +112,7 @@ export class ChatEventHandler {
 
   private async initializeResponseMessage() {
     this.alreadySentMessages[0] = await this.message.reply({
-      content: '> 생각중...',
+      content: `> ${ChatEventHandler.DISCORD_EMOJI_PLACEHOLDER} 생각중...`,
       allowedMentions: {
         repliedUser: false
       }
