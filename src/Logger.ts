@@ -26,13 +26,7 @@ export class Logger {
       .toFixed(3)
       .padStart(8, '0')
 
-    const callee =
-      new Error().stack?.split('\n')?.[3]?.trim()?.split(' ')?.[1] ?? 'unknown'
-
-    console.log(
-      `${chalk.gray(`[${date} (${duration})]`)} ${type} ${callee} -`,
-      ...data
-    )
+    console.log(`${chalk.gray(`[${date} (${duration})]`)} ${type}`, ...data)
   }
 }
 

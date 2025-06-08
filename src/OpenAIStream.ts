@@ -1,5 +1,5 @@
 import { Stream } from 'openai/streaming'
-import { ResponseStreamEvent } from 'openai/resources/responses/responses.mjs'
+import { ResponseStreamEvent } from 'openai/resources/responses/responses'
 import { logger } from './Logger'
 
 export interface OpenAIStreamData {

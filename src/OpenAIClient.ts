@@ -50,7 +50,13 @@ export class OpenAIClient {
     return new OpenAIStream(rawStream).createBufferedCompletionStream()
   }
 
-  public async startGeneratingSummary(chats: Chat[], tagChoices?: string[]) {
+  public async startGeneratingSummary(
+    chats: Chat[],
+    tagChoices?: string[]
+  ): Promise<{
+    title: string
+    tags?: string[]
+  }> {
     logger.info('Start summary...')
 
     const completion = await this.client.responses.create({

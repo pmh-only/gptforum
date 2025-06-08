@@ -1,5 +1,5 @@
 import { Chat as ChatEntity, ChatType } from '@prisma/client'
-import { ResponseInputItem } from 'openai/resources/responses/responses.mjs'
+import { ResponseInputItem } from 'openai/resources/responses/responses'
 
 export class Chat implements ChatEntity {
   public constructor(entity: ChatEntity) {

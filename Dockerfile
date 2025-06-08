@@ -1,32 +1,50 @@
-FROM oven/bun:alpine AS build
+FROM alpine AS build
+
+RUN apk add --no-cache nodejs npm
+RUN npm i -g pnpm
 
 WORKDIR /app
 
 COPY package.json \
-     bun.lock \
+     pnpm-lock.yaml \
      ./
 
-RUN bun install --frozen-lockfile
+RUN pnpm i --frozen-lockfile
 
 COPY prisma/ prisma/
-RUN bun prisma generate
+RUN pnpm prisma generate
 
+COPY tsconfig.json .
 COPY src/ src/
 
-RUN bun build src/main.ts \
-     --compile --minify \
-     --sourcemap --bytecode \
-     --outfile gptforum
+RUN pnpm tsc
 
-FROM alpine AS runtime
+FROM alpine AS resolve
+
+RUN apk add --no-cache nodejs npm
+RUN npm i -g pnpm
 
 WORKDIR /app
 
-RUN apk add --no-cache libstdc++
+COPY package.json \
+     pnpm-lock.yaml \
+     ./
 
-USER 1000:1000
+RUN pnpm i --frozen-lockfile -P
 
-COPY --chown=1000:1000 --from=build /app/gptforum .
-COPY --chown=1000:1000 --from=build /app/node_modules/.prisma/client/libquery_engine* /tmp/prisma-engines/
+FROM alpine AS runtime
 
-ENTRYPOINT [ "/app/gptforum" ]
+RUN apk add --no-cache nodejs
+
+ARG user=1000
+ARG group=1000
+
+USER $user:$group
+WORKDIR /app
+
+COPY --from=resolve /app/node_modules node_modules
+COPY --from=build /app/node_modules/.prisma/client node_modules/.prisma/client
+
+COPY --from=build /app/dist dist
+
+ENTRYPOINT ["/usr/bin/node", "dist/main.js"]
