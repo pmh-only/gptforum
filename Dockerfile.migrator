@@ -1,0 +1,23 @@
+FROM alpine AS deps
+
+WORKDIR /app
+
+RUN apk add --no-cache nodejs npm
+
+RUN npm init -y
+
+RUN npm i prisma
+
+FROM alpine AS runtime
+
+WORKDIR /app
+
+RUN apk add --no-cache nodejs
+
+USER 1000:1000
+
+COPY --chown=1000:1000 --from=deps /app/node_modules node_modules
+COPY --chown=1000:1000 prisma prisma
+
+ENTRYPOINT [ "/usr/bin/node", "node_modules/prisma/build/index.js" ]
+CMD [ "migrate", "deploy" ]
