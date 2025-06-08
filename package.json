@@ -2,7 +2,11 @@
   "name": "gptforum",
   "version": "0.1.0",
   "main": "dist/main.js",
-  "scripts": {},
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node .",
+    "dev": "nodemon -e ts --exec 'tsc && node . || exit 1'"
+  },
   "keywords": [],
   "author": "Minhyeok Park<pmh_only@pmh.codes>",
   "license": "MIT",

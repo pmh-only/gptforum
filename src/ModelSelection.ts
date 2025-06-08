@@ -20,6 +20,11 @@ export class ModelSelection {
       .setPlaceholder('여기를 눌러 모델 선택...')
       .addOptions(
         new StringSelectMenuOptionBuilder()
+          .setLabel('GPT-4.1 (with web search)')
+          .setDescription('인터넷 검색을 통해 정보를 받아 응답합니다')
+          .setValue('gpt-4.1-web')
+          .setEmoji('🌐'),
+        new StringSelectMenuOptionBuilder()
           .setLabel('o3')
           .setDescription(
             '생각하는데 더 많은 시간을 투자하여 전문적이거나 여러 각도의 고민이 필요한 주제에 적합합니다'
@@ -34,7 +39,7 @@ export class ModelSelection {
           .setValue('o4-mini')
           .setEmoji('🔍'),
         new StringSelectMenuOptionBuilder()
-          .setLabel('GPT-4.1')
+          .setLabel('GPT-4.1 (offline)')
           .setDescription('답변 생성이 빠르고 어떤 주제에도 적합합니다')
           .setValue('gpt-4.1')
           .setEmoji('💡'),

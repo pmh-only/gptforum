@@ -7,6 +7,7 @@ export interface OpenAIStreamData {
   isGenerating: boolean
   metadata?: {
     model: string
+    isWebSearchEnabled: boolean
     inputToken: number
     reasoningToken: number
     outputToken: number
@@ -35,6 +36,9 @@ export class OpenAIStream {
       if (chunk.type === 'response.completed') {
         output.metadata = {
           model: chunk.response.model,
+          isWebSearchEnabled:
+            chunk.response.tools.find((v) => v.type.includes('web_search')) !==
+            undefined,
           inputToken: chunk.response.usage?.input_tokens ?? 0,
           reasoningToken:
             chunk.response.usage?.output_tokens_details.reasoning_tokens ?? 0,

@@ -129,7 +129,7 @@ export class ChatEventHandler {
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
         (streamData.metadata !== undefined
           ? '\n\n' +
-            `> **${streamData.metadata.model}**\n` +
+            `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(with web search :globe_with_meridians:)' : ''}\n` +
             `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
             (streamData.metadata.reasoningToken > 0
               ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
