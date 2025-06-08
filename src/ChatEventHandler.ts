@@ -104,7 +104,7 @@ export class ChatEventHandler {
 
   private async initializeResponseMessage() {
     this.alreadySentMessages[0] = await this.message.reply({
-      content: '> <a:loading:1349419254092529805> 생각중...',
+      content: '> 생각중...',
       allowedMentions: {
         repliedUser: false
       }
@@ -120,7 +120,7 @@ export class ChatEventHandler {
       response =
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
         (streamData.metadata !== undefined
-          ? '\n' +
+          ? '\n\n' +
             `> **${streamData.metadata.model}**\n` +
             `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
             (streamData.metadata.reasoningToken > 0
