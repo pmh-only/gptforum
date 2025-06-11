@@ -129,14 +129,14 @@ export class ChatEventHandler {
 
       await this.respondMessage(
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
-        (streamData.metadata !== undefined
-          ? '\n\n' +
-            `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(with web search :globe_with_meridians:)' : ''}\n` +
-            `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
-            (streamData.metadata.reasoningToken > 0
-              ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
-              : '') +
-            `> 출력: ${streamData.metadata.outputToken - (streamData.metadata.reasoningToken ?? 0)} 토큰\n` +
+          (streamData.metadata !== undefined
+            ? '\n\n' +
+              `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(with web search :globe_with_meridians:)' : ''}\n` +
+              `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
+              (streamData.metadata.reasoningToken > 0
+                ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
+                : '') +
+              `> 출력: ${streamData.metadata.outputToken - (streamData.metadata.reasoningToken ?? 0)} 토큰\n` +
               `> 총합: ${streamData.metadata.totalToken} 토큰\n`
             : '')
       )
@@ -152,7 +152,7 @@ export class ChatEventHandler {
     let intermediateSlice = ''
 
     for (const slice of originalSlices) {
-      const futureSlice = (intermediateSlice + '\n' + slice).trim()
+      const futureSlice = intermediateSlice + '\n' + slice
       const isCodeBlockNotFinished =
         intermediateSlice.split('```').length % 2 === 0
       const maximumFeatureLenght =
