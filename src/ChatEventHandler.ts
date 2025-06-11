@@ -125,7 +125,9 @@ export class ChatEventHandler {
     let response = ''
 
     for await (const streamData of stream) {
-      response =
+      response = streamData.message
+
+      await this.respondMessage(
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
         (streamData.metadata !== undefined
           ? '\n\n' +
@@ -135,10 +137,9 @@ export class ChatEventHandler {
               ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
               : '') +
             `> 출력: ${streamData.metadata.outputToken - (streamData.metadata.reasoningToken ?? 0)} 토큰\n` +
-            `> 총합: ${streamData.metadata.totalToken} 토큰\n`
-          : '')
-
-      await this.respondMessage(response)
+              `> 총합: ${streamData.metadata.totalToken} 토큰\n`
+            : '')
+      )
     }
 
     return response
