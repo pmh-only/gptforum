@@ -113,9 +113,6 @@ export class ChatEventHandler {
 
     await this.initializeResponseMessage()
 
-    const chats = await this.conversation.getAllChats()
-    if (this.isStarter) void this.applyConversationSummary(chats)
-
     const model = MODELS[this.conversation.model]
     if (model === undefined) {
       await this.respondMessage(
@@ -123,6 +120,9 @@ export class ChatEventHandler {
       )
       return
     }
+
+    const chats = await this.conversation.getAllChats()
+    if (this.isStarter) void this.applyConversationSummary(chats, model)
 
     const completionStream = await this.openai.startCompletion(model, chats)
     const response = await this.iterateOverCompletionStream(
@@ -160,9 +160,13 @@ export class ChatEventHandler {
     return false
   }
 
-  private async applyConversationSummary(chats: Chat[]) {
-    const tagChoices = this.channel.parent?.availableTags.map(
-      (v) => `${v.name}:${v.id}`
+  private async applyConversationSummary(chats: Chat[], model: Model) {
+    const tagChoices = this.channel.parent?.availableTags
+      .filter((v) => !v.name.startsWith('@'))
+      .map((v) => `${v.name}:${v.id}`)
+
+    const modelTag = this.channel.parent?.availableTags.find(
+      (v) => v.name === `@ ${model.label}`
     )
 
     const summary = await this.openai.startGeneratingSummary(chats, tagChoices)
@@ -172,7 +176,10 @@ export class ChatEventHandler {
 
     await channel.edit({
       name: `${channel.name} - ${summary.title}`.slice(0, 100),
-      appliedTags: summary.tags?.map((v) => v.split(':')[1])
+      appliedTags: [
+        ...(summary.tags?.map((v) => v.split(':')[1]) ?? []),
+        ...(modelTag ? [modelTag.id] : [])
+      ]
     })
   }
 
