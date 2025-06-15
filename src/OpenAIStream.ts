@@ -33,6 +33,8 @@ export class OpenAIStream {
 
     for await (const chunk of this.rawStream) {
       if (chunk.type === 'response.output_text.delta') buffer.push(chunk.delta)
+      if (chunk.type === 'response.reasoning_summary_text.done')
+        buffer.push(`> ${chunk.text.split('\n').join('\n> ')}\n\n`)
 
       if (chunk.type === 'response.completed') {
         output.metadata = {
