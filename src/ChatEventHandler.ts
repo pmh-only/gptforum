@@ -1,8 +1,13 @@
 import {
   ChannelType,
+  ComponentType,
   ForumThreadChannel,
   Message,
-  PublicThreadChannel
+  MessageFlags,
+  PublicThreadChannel,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  TextDisplayBuilder
 } from 'discord.js'
 import { Conversation } from './Conversation'
 import { NotFoundError } from './Errors'
@@ -76,7 +81,7 @@ export class ChatEventHandler {
     this.channel = this.message.channel as ForumThreadChannel
   }
 
-  private readonly DISCORD_MESSAGE_LENGTH_MAX = 2000
+  private readonly DISCORD_MESSAGE_LENGTH_MAX = 4000
 
   private readonly openai = OpenAIClient.getInstance()
 
@@ -87,7 +92,7 @@ export class ChatEventHandler {
   private readonly tierQuota = TierQuotaManager.getInstance()
 
   private async handle() {
-    const isAuthorPermitted = this.conversation.isUserPermitted(
+    const isAuthorPermitted = await this.conversation.isUserPermitted(
       this.message.author
     )
     if (!isAuthorPermitted) {
@@ -139,6 +144,8 @@ export class ChatEventHandler {
         await this.respondMessage(
           '> 에디터 모드를 시작합니다. `/editor`로 종료할 수 있습니다'
         )
+
+      return true
     }
 
     if (this.message.content.startsWith('/model')) {
@@ -150,7 +157,7 @@ export class ChatEventHandler {
       return false
     }
 
-    return true
+    return false
   }
 
   private async applyConversationSummary(chats: Chat[]) {
@@ -209,7 +216,7 @@ export class ChatEventHandler {
       await this.respondMessage(
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
           (streamData.metadata !== undefined
-            ? '\n\n' +
+            ? '\n' +
               `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
               `> 입력: ${streamData.metadata.inputToken} 토큰 (${cost.input.toFixed(4)}$)\n` +
               `> 캐시: ${streamData.metadata.inputCachedToken} 토큰 (${cost.cachedInput.toFixed(4)}$)\n` +
@@ -222,7 +229,8 @@ export class ChatEventHandler {
                 ? '\n\n' +
                   '> **Commands** \n' +
                   '> `/model`: 모델 변경\n' +
-                  '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n'
+                  '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n' +
+                  '> `//...` 혹은 `#...`: 메시지를 무시합니다\n'
                 : '')
             : '')
       )
@@ -283,13 +291,32 @@ export class ChatEventHandler {
       return
     }
 
-    if (content !== alreadySentMessage.content) {
-      await alreadySentMessage.edit({
-        content: content,
-        allowedMentions: {
-          repliedUser: false
-        }
-      })
-    }
+    const newContents = content.split('---').map((v) => v.trim())
+    const oldContents = alreadySentMessage.components
+      .filter((v) => v.type === ComponentType.TextDisplay)
+      .map((v) => v.content.trim())
+
+    const isSame = newContents.every((v, i) => oldContents[i] === v)
+    if (isSame) return
+
+    const components = newContents
+      .map((content) => [
+        new TextDisplayBuilder().setContent(content).toJSON(),
+        new SeparatorBuilder()
+          .setDivider(true)
+          .setSpacing(SeparatorSpacingSize.Large)
+          .toJSON()
+      ])
+      .flat()
+      .slice(0, -1)
+
+    await alreadySentMessage.edit({
+      flags: [MessageFlags.IsComponentsV2],
+      content: null,
+      components: components,
+      allowedMentions: {
+        repliedUser: false
+      }
+    })
   }
 }
