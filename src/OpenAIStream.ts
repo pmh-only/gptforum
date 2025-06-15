@@ -22,6 +22,14 @@ export class OpenAIStream {
   private readonly BUFFER_SECOND =
     parseInt(process.env.BUFFER_SECOND ?? '2') || 2
 
+  private static DISCORD_LOADING_EMOJI_PLACEHOLDER =
+    process.env.DISCORD_LOADING_EMOJI_PLACEHOLDER ??
+    logger.warn(
+      'Loading animated emoji not provided. ' +
+        'you can download loading gif from internet and provide emoji id like DISCORD_LOADING_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
+    ) ??
+    '<a:loading:1381148556462653490>'
+
   public async *createBufferedCompletionStream(): AsyncGenerator<OpenAIStreamData> {
     const buffer: string[] = []
     const output: OpenAIStreamData = {
@@ -34,7 +42,10 @@ export class OpenAIStream {
     for await (const chunk of this.rawStream) {
       if (chunk.type === 'response.output_text.delta') buffer.push(chunk.delta)
       if (chunk.type === 'response.reasoning_summary_text.done')
-        buffer.push(`> ${chunk.text.split('\n').join('\n> ')}\n\n`)
+        buffer.push(
+          `> ${OpenAIStream.DISCORD_LOADING_EMOJI_PLACEHOLDER} **생각**: ` +
+            `${chunk.text.split('\n').join('\n> ')}\n\n`
+        )
 
       if (chunk.type === 'response.completed') {
         output.metadata = {
