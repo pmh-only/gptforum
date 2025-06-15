@@ -113,4 +113,15 @@ export class Conversation implements ConversationEntity {
 
     return chatCount < 1
   }
+
+  public async setModel(model: string) {
+    await prisma.conversation.update({
+      data: {
+        model
+      },
+      where: {
+        id: this.id
+      }
+    })
+  }
 }

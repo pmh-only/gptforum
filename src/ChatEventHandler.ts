@@ -92,6 +92,15 @@ export class ChatEventHandler {
         await this.message.reply('> 에디터 모드를 시작합니다')
     }
 
+    if (this.message.content.startsWith('/model')) {
+      const model = await new ModelSelection(this.channel).handle()
+      await conversation.setModel(model)
+      await this.message.reply(
+        `> 현재 대화의 모델을 \`${model}\`로 변경하였습니다`
+      )
+      return false
+    }
+
     return true
   }
 
