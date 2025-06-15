@@ -5,10 +5,7 @@ import { ChatType, Conversation as ConversationEntity } from '@prisma/client'
 import { Chat } from './Chat'
 
 export class Conversation implements ConversationEntity {
-  public constructor(
-    entity: ConversationEntity,
-    public readonly isStarter = false
-  ) {
+  public constructor(entity: ConversationEntity) {
     this.channelId = entity.channelId
     this.createdAt = entity.createdAt
     this.ownerId = entity.ownerId
@@ -53,7 +50,7 @@ export class Conversation implements ConversationEntity {
       }
     })
 
-    return new Conversation(conversation, true)
+    return new Conversation(conversation)
   }
 
   public async addDiscordMesssage(message: Message) {
@@ -61,7 +58,8 @@ export class Conversation implements ConversationEntity {
 
     await prisma.chat.create({
       data: {
-        content: (this.isStarter ? channel.name : '') + message.content,
+        content:
+          ((await this.getIsStarter()) ? channel.name : '') + message.content,
         type: ChatType.USER,
         conversationId: this.id
       }
@@ -103,5 +101,16 @@ export class Conversation implements ConversationEntity {
         id: this.id
       }
     })
+  }
+
+  public async getIsStarter() {
+    const chatCount = await prisma.chat.count({
+      where: {
+        conversationId: this.id,
+        type: ChatType.ASSISTANT
+      }
+    })
+
+    return chatCount < 1
   }
 }

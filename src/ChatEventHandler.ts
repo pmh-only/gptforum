@@ -72,7 +72,8 @@ export class ChatEventHandler {
     await this.initializeResponseMessage()
 
     const chats = await conversation.getAllChats()
-    if (conversation.isStarter) void this.applyConversationSummary(chats)
+    if (await conversation.getIsStarter())
+      void this.applyConversationSummary(chats)
 
     const completionStream = await this.openai.startCompletion(
       conversation.model,
