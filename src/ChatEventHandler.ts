@@ -217,13 +217,13 @@ export class ChatEventHandler {
                 ? `> 생각: ${streamData.metadata.reasoningToken} 토큰 (${cost.reasoning.toFixed(4)}$)\n`
                 : '') +
               `> 출력: ${streamData.metadata.outputToken} 토큰 (${cost.output.toFixed(4)}$)\n` +
-              `> 총합: ${streamData.metadata.totalToken} 토큰 (${totalCost.toFixed(4)}$)`
-            : '') +
-          (this.isStarter
-            ? '\n\n' +
-              '> **Commands** \n' +
-              '> `/model`: 모델 변경\n' +
-              '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n'
+              `> 총합: ${streamData.metadata.totalToken} 토큰 (${totalCost.toFixed(4)}$)` +
+              (this.isStarter
+                ? '\n\n' +
+                  '> **Commands** \n' +
+                  '> `/model`: 모델 변경\n' +
+                  '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n'
+                : '')
             : '')
       )
     }
