@@ -11,7 +11,7 @@ import { OpenAIStreamData } from './OpenAIStream'
 import { Chat } from './Chat'
 import { ModelSelection } from './ModelSelection'
 import { logger } from './Logger'
-import { MODELS } from './Models'
+import { Model, MODELS } from './Models'
 import { TierQuotaManager } from './TierQuotaManager'
 
 export class ChatEventHandler {
@@ -120,7 +120,10 @@ export class ChatEventHandler {
     }
 
     const completionStream = await this.openai.startCompletion(model, chats)
-    const response = await this.iterateOverCompletionStream(completionStream)
+    const response = await this.iterateOverCompletionStream(
+      model,
+      completionStream
+    )
 
     await this.conversation.addOpenAIResponse(response.message)
     await this.tierQuota.addQuotaUsage(
@@ -176,6 +179,7 @@ export class ChatEventHandler {
   }
 
   private async iterateOverCompletionStream(
+    model: Model,
     stream: AsyncGenerator<OpenAIStreamData>
   ) {
     let response: OpenAIStreamData | undefined
@@ -183,20 +187,40 @@ export class ChatEventHandler {
     for await (const streamData of stream) {
       response = streamData
 
+      const cost = {
+        input:
+          (streamData.metadata?.inputToken ?? 0 * model.cost.input) / 1_000_000,
+        cachedInput:
+          (streamData.metadata?.inputCachedToken ??
+            0 * model.cost.cached_input) / 1_000_000,
+        reasoning:
+          (streamData.metadata?.reasoningToken ?? 0 * model.cost.output) /
+          1_000_000,
+        output:
+          (streamData.metadata?.outputToken ?? 0 * model.cost.output) /
+          1_000_000
+      }
+
+      const totalCost = Object.values(cost).reduce(
+        (prev, curr) => prev + curr,
+        0
+      )
+
       await this.respondMessage(
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
           (streamData.metadata !== undefined
             ? '\n\n' +
               `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
-              `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
+              `> 입력: ${streamData.metadata.inputToken} 토큰 (${cost.input.toFixed(4)}$)\n` +
+              `> 캐시: ${streamData.metadata.inputCachedToken} 토큰 (${cost.cachedInput.toFixed(4)}$)\n` +
               (streamData.metadata.reasoningToken > 0
-                ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
+                ? `> 생각: ${streamData.metadata.reasoningToken} 토큰 (${cost.reasoning.toFixed(4)}$)\n`
                 : '') +
-              `> 출력: ${streamData.metadata.outputToken - (streamData.metadata.reasoningToken ?? 0)} 토큰\n` +
-              `> 총합: ${streamData.metadata.totalToken} 토큰\n`
+              `> 출력: ${streamData.metadata.outputToken} 토큰 (${cost.output.toFixed(4)}$)\n` +
+              `> 총합: ${streamData.metadata.totalToken} 토큰 (${totalCost.toFixed(4)}$)`
             : '') +
           (this.isStarter
-            ? '\n' +
+            ? '\n\n' +
               '> **Commands** \n' +
               '> `/model`: 모델 변경\n' +
               '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n'

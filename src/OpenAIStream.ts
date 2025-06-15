@@ -9,6 +9,7 @@ export interface OpenAIStreamData {
     model: string
     isWebSearchEnabled: boolean
     inputToken: number
+    inputCachedToken: number
     reasoningToken: number
     outputToken: number
     totalToken: number
@@ -39,10 +40,16 @@ export class OpenAIStream {
           isWebSearchEnabled:
             chunk.response.tools.find((v) => v.type.includes('web_search')) !==
             undefined,
-          inputToken: chunk.response.usage?.input_tokens ?? 0,
+          inputToken:
+            (chunk.response.usage?.input_tokens ?? 0) -
+            (chunk.response.usage?.input_tokens_details.cached_tokens ?? 0),
+          inputCachedToken:
+            chunk.response.usage?.input_tokens_details.cached_tokens ?? 0,
           reasoningToken:
             chunk.response.usage?.output_tokens_details.reasoning_tokens ?? 0,
-          outputToken: chunk.response.usage?.output_tokens ?? 0,
+          outputToken:
+            (chunk.response.usage?.output_tokens ?? 0) -
+            (chunk.response.usage?.output_tokens_details.reasoning_tokens ?? 0),
           totalToken: chunk.response.usage?.total_tokens ?? 0
         }
       }
