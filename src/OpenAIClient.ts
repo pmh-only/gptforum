@@ -4,6 +4,8 @@ import { OpenAIStream } from './OpenAIStream'
 import { z } from 'zod'
 import { Chat } from './Chat'
 import { logger } from './Logger'
+import { Model } from './Models'
+import { Tool } from 'openai/resources/responses/responses'
 
 export class OpenAIClient {
   private static readonly instance = new OpenAIClient()
@@ -30,22 +32,27 @@ export class OpenAIClient {
     apiKey: OpenAIClient.OPENAI_API_KEY
   })
 
-  public async startCompletion(model: string, chats: Chat[]) {
+  public async startCompletion(model: Model, chats: Chat[]) {
     logger.info('Start generating response...')
-    const websearchEnabled = model.endsWith('-web')
 
+    const system = OpenAIClient.OPENAI_DEFAULT_PROMPT + '\n' + model.system
     const rawStream = await this.client.responses.create({
-      model: model.replace('-web', ''),
       store: true,
-      tools: websearchEnabled ? [{ type: 'web_search_preview' }] : [],
+      stream: true,
+
+      model: model.id,
+      tools: model.tools.map((v) => ({ type: v })) as Tool[],
+
+      tool_choice: model.tools.length > 0 ? 'required' : undefined,
+      reasoning:
+        model.reasoningEffort !== undefined
+          ? { effort: model.reasoningEffort, summary: 'detailed' }
+          : undefined,
+
       input: [
-        {
-          role: 'system',
-          content: OpenAIClient.OPENAI_DEFAULT_PROMPT
-        },
+        { role: 'system', content: system },
         ...chats.map((v) => v.convertToOpenAIResponse())
-      ],
-      stream: true
+      ]
     })
 
     return new OpenAIStream(rawStream).createBufferedCompletionStream()

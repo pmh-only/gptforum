@@ -11,6 +11,7 @@ import { OpenAIStreamData } from './OpenAIStream'
 import { Chat } from './Chat'
 import { ModelSelection } from './ModelSelection'
 import { logger } from './Logger'
+import { MODELS } from './Models'
 
 export class ChatEventHandler {
   private static DISCORD_CHANNEL =
@@ -107,11 +108,15 @@ export class ChatEventHandler {
     const chats = await this.conversation.getAllChats()
     if (this.isStarter) void this.applyConversationSummary(chats)
 
-    const completionStream = await this.openai.startCompletion(
-      this.conversation.model,
-      chats
-    )
+    const model = MODELS[this.conversation.model]
+    if (model === undefined) {
+      await this.respondMessage(
+        `> 모델 \`${this.conversation.model}\`는 지원 종료되었습니다. 새로운 대화를 시작해 주세요`
+      )
+      return
+    }
 
+    const completionStream = await this.openai.startCompletion(model, chats)
     const response = await this.iterateOverCompletionStream(completionStream)
 
     await this.conversation.addOpenAIResponse(response)
@@ -121,7 +126,7 @@ export class ChatEventHandler {
     if (this.message.content.startsWith('/editor')) {
       await this.conversation.toggleEditorMode()
       if (this.conversation.isEditMode)
-        await this.message.reply(
+        await this.respondMessage(
           '> 에디터 모드를 시작합니다. `/editor`로 종료할 수 있습니다'
         )
     }
@@ -129,7 +134,7 @@ export class ChatEventHandler {
     if (this.message.content.startsWith('/model')) {
       const model = await new ModelSelection(this.channel).handle()
       await this.conversation.setModel(model)
-      await this.message.reply(
+      await this.respondMessage(
         `> 현재 대화의 모델을 \`${model}\`로 변경하였습니다`
       )
       return false
