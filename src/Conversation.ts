@@ -1,9 +1,8 @@
 import { Channel, ForumThreadChannel, Message, User } from 'discord.js'
 import { prisma } from './Database'
-import { NotFoundError, NotPermittedError } from './Errors'
+import { NotFoundError } from './Errors'
 import { ChatType, Conversation as ConversationEntity } from '@prisma/client'
 import { Chat } from './Chat'
-import { logger } from './Logger'
 
 export class Conversation implements ConversationEntity {
   public constructor(
@@ -15,8 +14,10 @@ export class Conversation implements ConversationEntity {
     this.ownerId = entity.ownerId
     this.id = entity.id
     this.model = entity.model
+    this.isEditMode = entity.isEditMode
   }
 
+  public isEditMode: boolean
   public readonly channelId: string
   public readonly createdAt: Date
   public readonly ownerId: string
@@ -58,14 +59,6 @@ export class Conversation implements ConversationEntity {
   public async addDiscordMesssage(message: Message) {
     const channel = message.channel as ForumThreadChannel
 
-    if (message.author.id !== this.ownerId) {
-      logger.warn('Permit violation detected. ignore message.')
-
-      throw new NotPermittedError(
-        'User not permitted to attend this conversation'
-      )
-    }
-
     await prisma.chat.create({
       data: {
         content: (this.isStarter ? channel.name : '') + message.content,
@@ -73,6 +66,10 @@ export class Conversation implements ConversationEntity {
         conversationId: this.id
       }
     })
+  }
+
+  public async isUserPermitted(user: User) {
+    return user.id === this.ownerId
   }
 
   public async addOpenAIResponse(content: string) {
@@ -93,5 +90,18 @@ export class Conversation implements ConversationEntity {
     })
 
     return chats.map((v) => new Chat(v))
+  }
+
+  public async toggleEditorMode() {
+    this.isEditMode = !this.isEditMode
+
+    await prisma.conversation.update({
+      data: {
+        isEditMode: this.isEditMode
+      },
+      where: {
+        id: this.id
+      }
+    })
   }
 }

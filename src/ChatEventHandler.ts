@@ -31,7 +31,7 @@ export class ChatEventHandler {
     if (message.channel.parentId !== ChatEventHandler.DISCORD_CHANNEL) return
     if (message.author.bot) return
     if (message.channel.flags.has('Pinned')) return
-    if (message.content.match(/^[#/]/)) return
+    if (message.content.startsWith('#')) return
 
     logger.info('condition met. create new handler instance.')
 
@@ -54,12 +54,20 @@ export class ChatEventHandler {
 
   private async handle() {
     const conversation = await this.fetchConversation()
-    const isPermissionDenied = await conversation
-      .addDiscordMesssage(this.message)
-      .then(() => false)
-      .catch(() => true)
+    const isAuthorPermitted = conversation.isUserPermitted(this.message.author)
+    if (!isAuthorPermitted) {
+      logger.warn('Permit violation detected. ignore message.')
+      return
+    }
 
-    if (isPermissionDenied) return
+    const isCommandProvided = this.message.content.startsWith('/')
+    if (isCommandProvided) {
+      const isContinue = await this.handleCommand(conversation)
+      if (!isContinue) return
+    }
+
+    if (!isCommandProvided) await conversation.addDiscordMesssage(this.message)
+    if (conversation.isEditMode) return
 
     await this.initializeResponseMessage()
 
@@ -74,6 +82,16 @@ export class ChatEventHandler {
     const response = await this.iterateOverCompletionStream(completionStream)
 
     await conversation.addOpenAIResponse(response)
+  }
+
+  private async handleCommand(conversation: Conversation): Promise<boolean> {
+    if (this.message.content.startsWith('/editor')) {
+      await conversation.toggleEditorMode()
+      if (conversation.isEditMode)
+        await this.message.reply('> 에디터 모드를 시작합니다')
+    }
+
+    return true
   }
 
   private async fetchConversation() {
