@@ -35,12 +35,42 @@ export class ChatEventHandler {
 
     logger.info('condition met. create new handler instance.')
 
-    new ChatEventHandler(message).handle()
+    const conversation = await this.fetchConversation(message)
+
+    new ChatEventHandler(
+      message,
+      conversation,
+      await conversation.getIsStarter()
+    ).handle()
+  }
+
+  private static async fetchConversation(message: Message) {
+    const fetchedConversation = await Conversation.fetchFromChannel(
+      message.channel
+    ).catch((err: Error) => err)
+
+    if (fetchedConversation instanceof NotFoundError) {
+      const model = await new ModelSelection(
+        message.channel as ForumThreadChannel
+      ).handle()
+
+      return await Conversation.createFromChannel(
+        message.channel,
+        message.author,
+        model
+      )
+    }
+
+    return fetchedConversation as Conversation
   }
 
   // ---
 
-  private constructor(private readonly message: Message) {
+  private constructor(
+    private readonly message: Message,
+    private readonly conversation: Conversation,
+    private readonly isStarter: boolean
+  ) {
     this.channel = this.message.channel as ForumThreadChannel
   }
 
@@ -53,8 +83,9 @@ export class ChatEventHandler {
   private readonly alreadySentMessages: Message[] = []
 
   private async handle() {
-    const conversation = await this.fetchConversation()
-    const isAuthorPermitted = conversation.isUserPermitted(this.message.author)
+    const isAuthorPermitted = this.conversation.isUserPermitted(
+      this.message.author
+    )
     if (!isAuthorPermitted) {
       logger.warn('Permit violation detected. ignore message.')
       return
@@ -62,39 +93,42 @@ export class ChatEventHandler {
 
     const isCommandProvided = this.message.content.startsWith('/')
     if (isCommandProvided) {
-      const isContinue = await this.handleCommand(conversation)
+      const isContinue = await this.handleCommand()
       if (!isContinue) return
     }
 
-    if (!isCommandProvided) await conversation.addDiscordMesssage(this.message)
-    if (conversation.isEditMode) return
+    if (!isCommandProvided)
+      await this.conversation.addDiscordMesssage(this.message)
+
+    if (this.conversation.isEditMode) return
 
     await this.initializeResponseMessage()
 
-    const chats = await conversation.getAllChats()
-    if (await conversation.getIsStarter())
-      void this.applyConversationSummary(chats)
+    const chats = await this.conversation.getAllChats()
+    if (this.isStarter) void this.applyConversationSummary(chats)
 
     const completionStream = await this.openai.startCompletion(
-      conversation.model,
+      this.conversation.model,
       chats
     )
 
     const response = await this.iterateOverCompletionStream(completionStream)
 
-    await conversation.addOpenAIResponse(response)
+    await this.conversation.addOpenAIResponse(response)
   }
 
-  private async handleCommand(conversation: Conversation): Promise<boolean> {
+  private async handleCommand(): Promise<boolean> {
     if (this.message.content.startsWith('/editor')) {
-      await conversation.toggleEditorMode()
-      if (conversation.isEditMode)
-        await this.message.reply('> 에디터 모드를 시작합니다')
+      await this.conversation.toggleEditorMode()
+      if (this.conversation.isEditMode)
+        await this.message.reply(
+          '> 에디터 모드를 시작합니다. `/editor`로 종료할 수 있습니다'
+        )
     }
 
     if (this.message.content.startsWith('/model')) {
       const model = await new ModelSelection(this.channel).handle()
-      await conversation.setModel(model)
+      await this.conversation.setModel(model)
       await this.message.reply(
         `> 현재 대화의 모델을 \`${model}\`로 변경하였습니다`
       )
@@ -102,24 +136,6 @@ export class ChatEventHandler {
     }
 
     return true
-  }
-
-  private async fetchConversation() {
-    const fetchedConversation = await Conversation.fetchFromChannel(
-      this.channel
-    ).catch((err: Error) => err)
-
-    if (fetchedConversation instanceof NotFoundError) {
-      const model = await new ModelSelection(this.channel).handle()
-
-      return await Conversation.createFromChannel(
-        this.message.channel,
-        this.message.author,
-        model
-      )
-    }
-
-    return fetchedConversation as Conversation
   }
 
   private async applyConversationSummary(chats: Chat[]) {
@@ -159,13 +175,19 @@ export class ChatEventHandler {
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
           (streamData.metadata !== undefined
             ? '\n\n' +
-              `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(with web search :globe_with_meridians:)' : ''}\n` +
+              `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
               `> 입력: ${streamData.metadata.inputToken} 토큰\n` +
               (streamData.metadata.reasoningToken > 0
                 ? `> 생각: ${streamData.metadata.reasoningToken} 토큰\n`
                 : '') +
               `> 출력: ${streamData.metadata.outputToken - (streamData.metadata.reasoningToken ?? 0)} 토큰\n` +
               `> 총합: ${streamData.metadata.totalToken} 토큰\n`
+            : '') +
+          (this.isStarter
+            ? '\n' +
+              '> **Commands** \n' +
+              '> `/model`: 모델 변경\n' +
+              '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n'
             : '')
       )
     }

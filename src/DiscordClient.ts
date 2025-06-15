@@ -39,7 +39,11 @@ export class DiscordClient extends Client {
     super(DiscordClient.CLIENT_OPTIONS)
 
     this.on(Events.ClientReady, this.onReady.bind(this))
-    this.on(Events.MessageCreate, ChatEventHandler.handleMessageCreate)
+    this.on(
+      Events.MessageCreate,
+      ChatEventHandler.handleMessageCreate.bind(ChatEventHandler)
+    )
+
     this.login(DiscordClient.DISCORD_TOKEN)
   }
 
