@@ -42,7 +42,7 @@ export class DiscordClient extends Client {
     this.on(Events.ClientReady, this.onReady.bind(this))
     this.on(
       Events.MessageCreate,
-      ChatEventHandler.handleMessageCreate.bind(ChatEventHandler, this)
+      ChatEventHandler.handleMessageCreate.bind(ChatEventHandler)
     )
 
     this.login(DiscordClient.DISCORD_TOKEN)

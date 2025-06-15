@@ -13,7 +13,6 @@ import { ModelSelection } from './ModelSelection'
 import { logger } from './Logger'
 import { MODELS } from './Models'
 import { TierQuotaManager } from './TierQuotaManager'
-import { DiscordClient } from './DiscordClient'
 
 export class ChatEventHandler {
   private static DISCORD_CHANNEL =
@@ -29,10 +28,7 @@ export class ChatEventHandler {
     ) ??
     '<a:loading:1381148556462653490>'
 
-  public static async handleMessageCreate(
-    client: DiscordClient,
-    message: Message
-  ) {
+  public static async handleMessageCreate(message: Message) {
     if (message.channel.type !== ChannelType.PublicThread) return
     if (message.channel.parentId !== ChatEventHandler.DISCORD_CHANNEL) return
     if (message.author.bot) return
@@ -44,7 +40,6 @@ export class ChatEventHandler {
     const conversation = await this.fetchConversation(message)
 
     new ChatEventHandler(
-      client,
       message,
       conversation,
       await conversation.getIsStarter()
@@ -74,7 +69,6 @@ export class ChatEventHandler {
   // ---
 
   private constructor(
-    private readonly client: DiscordClient,
     private readonly message: Message,
     private readonly conversation: Conversation,
     private readonly isStarter: boolean
