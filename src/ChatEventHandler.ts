@@ -223,7 +223,7 @@ export class ChatEventHandler {
       await this.respondMessage(
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
           (streamData.metadata !== undefined
-            ? '\n' +
+            ? '---\n' +
               `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
               `> 입력: ${streamData.metadata.inputToken} 토큰 (${cost.input.toFixed(4)}$)\n` +
               `> 캐시: ${streamData.metadata.inputCachedToken} 토큰 (${cost.cachedInput.toFixed(4)}$)\n` +
