@@ -8,6 +8,7 @@ import {
 import { ConfigIllegalError } from './Errors'
 import { ChatEventHandler } from './ChatEventHandler'
 import { logger } from './Logger'
+import { TierQuotaManager } from './TierQuotaManager'
 
 export class DiscordClient extends Client {
   private static readonly CLIENT_OPTIONS: ClientOptions = {
@@ -41,15 +42,19 @@ export class DiscordClient extends Client {
     this.on(Events.ClientReady, this.onReady.bind(this))
     this.on(
       Events.MessageCreate,
-      ChatEventHandler.handleMessageCreate.bind(ChatEventHandler)
+      ChatEventHandler.handleMessageCreate.bind(ChatEventHandler, this)
     )
 
     this.login(DiscordClient.DISCORD_TOKEN)
   }
 
+  private readonly tierQuotaManager = TierQuotaManager.getInstance()
+
   private async onReady() {
     logger.info((this.user?.username ?? 'gptforum') + ' is now ready.')
+
     await this.checkConfigChannelIsValid()
+    await this.tierQuotaManager.initClient(this)
   }
 
   private async checkConfigChannelIsValid() {

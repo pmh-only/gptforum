@@ -36,6 +36,17 @@ model Chat {
   @@index([conversationId])
 }
 
+model TierQuota {
+  date String
+  tier String
+
+  usage Int @default(0)
+  messageId String?
+
+  @@id([date, tier])
+  @@index([date])
+}
+
 // ---
 
 enum ChatType {

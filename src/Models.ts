@@ -1,9 +1,9 @@
 import { ReasoningEffort } from 'openai/resources/shared'
 
 export enum ModelFreeTier {
-  NOT_APPLIED,
-  NORMAL_QUOTA,
-  MINI_QUOTA
+  NOT_APPLIED = 'NOT_APPLIED',
+  NORMAL_QUOTA = 'NORMAL_QUOTA',
+  MINI_QUOTA = 'MINI_QUOTA'
 }
 
 export interface Model {
@@ -81,8 +81,14 @@ export const MODELS: Record<string, Model> = {
   }
 }
 
-export const ModelTierCredit: Record<ModelFreeTier, number> = {
-  [ModelFreeTier.NORMAL_QUOTA]: 10,
-  [ModelFreeTier.MINI_QUOTA]: 10,
-  [ModelFreeTier.NOT_APPLIED]: 0
+export const ModelTierCredit: Record<ModelFreeTier, number | undefined> = {
+  [ModelFreeTier.NORMAL_QUOTA]: 1_000_000,
+  [ModelFreeTier.MINI_QUOTA]: 10_000_000,
+  [ModelFreeTier.NOT_APPLIED]: undefined
+}
+
+export const ModelTierLabel: Record<ModelFreeTier, string> = {
+  [ModelFreeTier.NORMAL_QUOTA]: '일반 모델',
+  [ModelFreeTier.MINI_QUOTA]: '소형 모델',
+  [ModelFreeTier.NOT_APPLIED]: ''
 }

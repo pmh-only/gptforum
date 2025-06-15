@@ -12,6 +12,8 @@ import { Chat } from './Chat'
 import { ModelSelection } from './ModelSelection'
 import { logger } from './Logger'
 import { MODELS } from './Models'
+import { TierQuotaManager } from './TierQuotaManager'
+import { DiscordClient } from './DiscordClient'
 
 export class ChatEventHandler {
   private static DISCORD_CHANNEL =
@@ -19,15 +21,18 @@ export class ChatEventHandler {
     logger.error('DISCORD_CHANNEL NOT PROVIDED') ??
     process.exit(-1)
 
-  private static DISCORD_EMOJI_PLACEHOLDER =
-    process.env.DISCORD_EMOJI_PLACEHOLDER ??
+  private static DISCORD_LOADING_EMOJI_PLACEHOLDER =
+    process.env.DISCORD_LOADING_EMOJI_PLACEHOLDER ??
     logger.warn(
       'Loading animated emoji not provided. ' +
-        'you can download loading gif from internet and provide emoji id like DISCORD_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
+        'you can download loading gif from internet and provide emoji id like DISCORD_LOADING_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
     ) ??
     '<a:loading:1381148556462653490>'
 
-  public static async handleMessageCreate(message: Message) {
+  public static async handleMessageCreate(
+    client: DiscordClient,
+    message: Message
+  ) {
     if (message.channel.type !== ChannelType.PublicThread) return
     if (message.channel.parentId !== ChatEventHandler.DISCORD_CHANNEL) return
     if (message.author.bot) return
@@ -39,6 +44,7 @@ export class ChatEventHandler {
     const conversation = await this.fetchConversation(message)
 
     new ChatEventHandler(
+      client,
       message,
       conversation,
       await conversation.getIsStarter()
@@ -68,6 +74,7 @@ export class ChatEventHandler {
   // ---
 
   private constructor(
+    private readonly client: DiscordClient,
     private readonly message: Message,
     private readonly conversation: Conversation,
     private readonly isStarter: boolean
@@ -82,6 +89,8 @@ export class ChatEventHandler {
   private readonly channel: ForumThreadChannel
 
   private readonly alreadySentMessages: Message[] = []
+
+  private readonly tierQuota = TierQuotaManager.getInstance()
 
   private async handle() {
     const isAuthorPermitted = this.conversation.isUserPermitted(
@@ -119,7 +128,11 @@ export class ChatEventHandler {
     const completionStream = await this.openai.startCompletion(model, chats)
     const response = await this.iterateOverCompletionStream(completionStream)
 
-    await this.conversation.addOpenAIResponse(response)
+    await this.conversation.addOpenAIResponse(response.message)
+    await this.tierQuota.addQuotaUsage(
+      model.freeTier,
+      response.metadata?.totalToken ?? 0
+    )
   }
 
   private async handleCommand(): Promise<boolean> {
@@ -161,7 +174,7 @@ export class ChatEventHandler {
 
   private async initializeResponseMessage() {
     this.alreadySentMessages[0] = await this.message.reply({
-      content: `> ${ChatEventHandler.DISCORD_EMOJI_PLACEHOLDER} 생각중...`,
+      content: `> ${ChatEventHandler.DISCORD_LOADING_EMOJI_PLACEHOLDER} 생각중...`,
       allowedMentions: {
         repliedUser: false
       }
@@ -171,10 +184,10 @@ export class ChatEventHandler {
   private async iterateOverCompletionStream(
     stream: AsyncGenerator<OpenAIStreamData>
   ) {
-    let response = ''
+    let response: OpenAIStreamData | undefined
 
     for await (const streamData of stream) {
-      response = streamData.message
+      response = streamData
 
       await this.respondMessage(
         `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
@@ -197,7 +210,7 @@ export class ChatEventHandler {
       )
     }
 
-    return response
+    return response as OpenAIStreamData
   }
 
   private sliceStringByDiscordLimit(str: string): string[] {
