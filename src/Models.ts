@@ -26,10 +26,9 @@ export const MODELS: Record<string, Model> = {
   o3: {
     id: 'o3',
     label: 'o3 (high)',
-    description:
-      '생각하는데 더 많은 시간을 투자하여 전문적이거나 여러 각도의 고민이 필요한 주제에 적합합니다',
+    description: '생각하는데 더 많은 시간을 투자하여 전문적인 주제에 적합',
     emoji: '🤔',
-    tools: [],
+    tools: ['web_search_preview'],
     cost: {
       input: 2,
       cached_input: 0.5,
@@ -41,9 +40,9 @@ export const MODELS: Record<string, Model> = {
   'o4-mini': {
     id: 'o4-mini',
     label: 'o4-mini',
-    description: '적당한 시간을 투자하여 복잡한 문제를 해결하는데 적합합니다',
+    description: '적당한 시간을 투자하여 복잡한 문제를 해결하는데 적합',
     emoji: '🔍',
-    tools: [],
+    tools: ['web_search_preview'],
     reasoningEffort: 'medium',
     cost: {
       input: 1.1,
@@ -55,7 +54,7 @@ export const MODELS: Record<string, Model> = {
   'gpt-4.1-web': {
     id: 'gpt-4.1',
     label: '⭐ GPT-4.1',
-    description: '인터넷 검색을 통해 정보를 받아 응답합니다',
+    description: '웹 검색을 최대한 활용하여 최신 주제에 적합',
     emoji: '🌐',
     tools: ['web_search_preview'],
     system: 'utilize web search on every response',
@@ -68,8 +67,8 @@ export const MODELS: Record<string, Model> = {
   },
   'gpt-4.1-nano': {
     id: 'gpt-4.1-nano',
-    label: 'GPT-4.1-nano',
-    description: '답변 생성이 매우 빨라 단순한 자동완성 등에 적합합니다',
+    label: 'GPT-4.1-nano (웹 검색 x)',
+    description: '답변 생성이 매우 빨라 단순한 자동완성 등에 적합',
     tools: [],
     emoji: '⚡',
     cost: {
