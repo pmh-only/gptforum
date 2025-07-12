@@ -124,7 +124,12 @@ export class ChatEventHandler {
     const chats = await this.conversation.getAllChats()
     if (this.isStarter) void this.applyConversationSummary(chats, model)
 
-    const completionStream = await this.openai.startCompletion(model, chats)
+    const completionStream = await this.openai.startCompletion(
+      model,
+      chats,
+      this.conversation.id
+    )
+
     const response = await this.iterateOverCompletionStream(
       model,
       completionStream

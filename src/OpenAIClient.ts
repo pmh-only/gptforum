@@ -36,7 +36,7 @@ export class OpenAIClient {
     apiKey: OpenAIClient.OPENAI_API_KEY
   })
 
-  public async startCompletion(model: Model, chats: Chat[]) {
+  public async startCompletion(model: Model, chats: Chat[], userIdent: number) {
     logger.info('Start generating response...')
 
     const system = OpenAIClient.OPENAI_DEFAULT_PROMPT + '\n' + model.system
@@ -56,7 +56,11 @@ export class OpenAIClient {
       input: [
         { role: 'system', content: system },
         ...chats.map((v) => v.convertToOpenAIResponse())
-      ]
+      ],
+
+      truncation: 'auto',
+
+      user: userIdent.toString()
     })
 
     return new OpenAIStream(rawStream).createBufferedCompletionStream()

@@ -78,7 +78,7 @@ export class OpenAIStream {
     output.message = buffer.join('')
     output.isGenerating = false
 
-    logger.info('Resopnse stream finished')
+    logger.info('Response stream finished')
 
     yield output
   }
