@@ -12,6 +12,7 @@ export interface Model {
   description: string
   emoji: string
   tools: string[]
+  toolRequired?: boolean
   reasoningEffort?: ReasoningEffort
   system?: string
   cost: {
@@ -28,6 +29,7 @@ export const MODELS: Record<string, Model> = {
     label: 'o3 (high)',
     description: '생각하는데 더 많은 시간을 투자하여 전문적인 주제에 적합',
     emoji: '🤔',
+    system: 'use [name](url) syntax for citing webpage',
     tools: ['web_search_preview'],
     cost: {
       input: 2,
@@ -44,6 +46,7 @@ export const MODELS: Record<string, Model> = {
     emoji: '🔍',
     tools: ['web_search_preview'],
     reasoningEffort: 'medium',
+    system: 'use [name](url) syntax for citing webpage',
     cost: {
       input: 1.1,
       cached_input: 0.28,
@@ -57,7 +60,10 @@ export const MODELS: Record<string, Model> = {
     description: '웹 검색을 최대한 활용하여 최신 주제에 적합',
     emoji: '🌐',
     tools: ['web_search_preview'],
-    system: 'utilize web search on every response',
+    toolRequired: true,
+    system:
+      'utilize web search on every response\n' +
+      'use [name](url) syntax for citing webpage',
     cost: {
       input: 2,
       cached_input: 0.5,

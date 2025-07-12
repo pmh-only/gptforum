@@ -22,7 +22,9 @@ export class OpenAIClient {
 
   private static readonly OPENAI_DEFAULT_PROMPT =
     process.env.OPENAI_DEFAULT_PROMPT ??
-    'respond in discord-flavored markdown format. (for example, you CAN NOT use table and 4~6 level heading but you can use 1~3 level heading with #)\n' +
+    'respond in discord-flavored markdown format.\n' +
+      'you CAN NOT use 4~6 level heading but you can use 1~3 level heading with #\n' +
+      'you CAN NOT use table syntax for markdown\n' +
       'also you CAN NOT use bold, italic, underline etc in code block and code span\n' +
       'DO NOT use latex syntax, use unicode characters for math equation. use code block(```...```) and code span(`...`)\n' +
       'DO NOT append spaces before code block start and end\n' +
@@ -47,7 +49,6 @@ export class OpenAIClient {
       model: model.id,
       tools: model.tools.map((v) => ({ type: v })) as Tool[],
 
-      tool_choice: model.tools.length > 0 ? 'required' : undefined,
       reasoning:
         model.reasoningEffort !== undefined
           ? { effort: model.reasoningEffort, summary: 'detailed' }
@@ -58,6 +59,7 @@ export class OpenAIClient {
         ...chats.map((v) => v.convertToOpenAIResponse())
       ],
 
+      tool_choice: model.toolRequired === true ? 'required' : 'auto',
       truncation: 'auto',
 
       user: userIdent.toString()

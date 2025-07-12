@@ -190,7 +190,14 @@ export class ChatEventHandler {
 
   private async initializeResponseMessage() {
     this.alreadySentMessages[0] = await this.message.reply({
-      content: `> ${ChatEventHandler.DISCORD_LOADING_EMOJI_PLACEHOLDER} 생각중...`,
+      components: [
+        new TextDisplayBuilder()
+          .setContent(
+            `> ${ChatEventHandler.DISCORD_LOADING_EMOJI_PLACEHOLDER} 생각중...`
+          )
+          .toJSON()
+      ],
+      flags: [MessageFlags.IsComponentsV2],
       allowedMentions: {
         repliedUser: false
       }
@@ -231,7 +238,9 @@ export class ChatEventHandler {
             ? '---\n' +
               `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
               `> 입력: ${streamData.metadata.inputToken} 토큰 (${cost.input.toFixed(4)}$)\n` +
-              `> 캐시: ${streamData.metadata.inputCachedToken} 토큰 (${cost.cachedInput.toFixed(4)}$)\n` +
+              (streamData.metadata.inputCachedToken > 0
+                ? `> 캐시: ${streamData.metadata.inputCachedToken} 토큰 (${cost.cachedInput.toFixed(4)}$)\n`
+                : '') +
               (streamData.metadata.reasoningToken > 0
                 ? `> 생각: ${streamData.metadata.reasoningToken} 토큰 (${cost.reasoning.toFixed(4)}$)\n`
                 : '') +
@@ -312,6 +321,7 @@ export class ChatEventHandler {
     if (isSame) return
 
     const components = newContents
+      .filter((content) => content.length > 0)
       .map((content) => [
         new TextDisplayBuilder().setContent(content).toJSON(),
         new SeparatorBuilder()
