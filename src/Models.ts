@@ -14,6 +14,7 @@ export interface Model {
   tools: string[]
   toolRequired?: boolean
   reasoningEffort?: ReasoningEffort
+  textVerbosity?: 'low' | 'medium' | 'high'
   system?: string
   cost: {
     input: number // in dollar
@@ -24,64 +25,64 @@ export interface Model {
 }
 
 export const MODELS: Record<string, Model> = {
-  o3: {
-    id: 'o3',
-    label: 'o3 (high)',
+  'gpt-5-high': {
+    id: 'gpt-5',
+    label: 'GPT-5 (high)',
     description: '생각하는데 더 많은 시간을 투자하여 전문적인 주제에 적합',
-    emoji: '🤔',
-    system: 'use [name](url) syntax for citing webpage',
+    emoji: '🔬',
     tools: ['web_search_preview'],
     cost: {
-      input: 2,
-      cached_input: 0.5,
-      output: 8
+      input: 1.25,
+      cached_input: 0.125,
+      output: 10
     },
     reasoningEffort: 'high',
+    textVerbosity: 'high',
     freeTier: ModelFreeTier.NORMAL_QUOTA
   },
-  'o4-mini': {
-    id: 'o4-mini',
-    label: 'o4-mini',
+  'gpt-5-medium': {
+    id: 'gpt-5',
+    label: 'GPT-5 (medium)',
     description: '적당한 시간을 투자하여 복잡한 문제를 해결하는데 적합',
+    emoji: '🤔',
+    tools: ['web_search_preview'],
+    cost: {
+      input: 1.25,
+      cached_input: 0.125,
+      output: 10
+    },
+    reasoningEffort: 'medium',
+    textVerbosity: 'high',
+    freeTier: ModelFreeTier.NORMAL_QUOTA
+  },
+  'gpt-5-mini': {
+    id: 'gpt-5-mini',
+    label: 'GPT-5 mini',
+    description: '조금의 시간을 투자하여 간단한 문제를 해결하는데 적합',
     emoji: '🔍',
     tools: ['web_search_preview'],
-    reasoningEffort: 'medium',
-    system: 'use [name](url) syntax for citing webpage',
     cost: {
-      input: 1.1,
-      cached_input: 0.28,
-      output: 4.4
+      input: 0.25,
+      cached_input: 0.025,
+      output: 2
     },
+    reasoningEffort: 'medium',
+    textVerbosity: 'high',
     freeTier: ModelFreeTier.MINI_QUOTA
   },
-  'gpt-4.1-web': {
-    id: 'gpt-4.1',
-    label: '⭐ GPT-4.1',
-    description: '웹 검색을 최대한 활용하여 최신 주제에 적합',
-    emoji: '🌐',
-    tools: ['web_search_preview'],
-    toolRequired: true,
-    system:
-      'utilize web search on every response\n' +
-      'use [name](url) syntax for citing webpage',
-    cost: {
-      input: 2,
-      cached_input: 0.5,
-      output: 8
-    },
-    freeTier: ModelFreeTier.NORMAL_QUOTA
-  },
-  'gpt-4.1-nano': {
-    id: 'gpt-4.1-nano',
-    label: 'GPT-4.1-nano (웹 검색 x)',
+  'gpt-5-nano': {
+    id: 'gpt-5-nano',
+    label: 'GPT-5 nano (웹 검색 x)',
     description: '답변 생성이 매우 빨라 단순한 자동완성 등에 적합',
     tools: [],
     emoji: '⚡',
     cost: {
-      input: 0.1,
-      cached_input: 0.03,
+      input: 0.05,
+      cached_input: 0.005,
       output: 0.4
     },
+    reasoningEffort: 'minimal',
+    textVerbosity: 'high',
     freeTier: ModelFreeTier.MINI_QUOTA
   }
 }

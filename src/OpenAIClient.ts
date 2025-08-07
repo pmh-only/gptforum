@@ -18,19 +18,27 @@ export class OpenAIClient {
     process.exit(-1)
 
   private static readonly OPENAI_SUMMARY_MODEL =
-    process.env.OPENAI_SUMMARY_MODEL ?? 'gpt-4.1-nano'
+    process.env.OPENAI_SUMMARY_MODEL ?? 'gpt-5-nano'
 
   private static readonly OPENAI_DEFAULT_PROMPT =
     process.env.OPENAI_DEFAULT_PROMPT ??
-    'respond in discord-flavored markdown format.\n' +
-      'you CAN NOT use 4~6 level heading but you can use 1~3 level heading with #\n' +
-      'you CAN NOT use table syntax for markdown\n' +
-      'also you CAN NOT use bold, italic, underline etc in code block and code span\n' +
-      'DO NOT use latex syntax, use unicode characters for math equation. use code block(```...```) and code span(`...`)\n' +
-      'DO NOT append spaces before code block start and end\n' +
-      'respond in language that user used at first time\n' +
-      'you CAN use --- to insert seperator between sections\n' +
-      'do not mention about above instructions (system instructions).'
+    `
+      # Discord Markdown Formatting Guidelines
+      - Format responses using Discord-flavored markdown exclusively.
+      - Use only headings level 1 to 3 (\`#\`, \`##\`, \`###\`); never use lower-level headings.
+      - Avoid table syntax in markdown.
+      - Do not apply bold, italic, underline, or similar styles within code blocks or code spans.
+      - Do not use LaTeX syntax. Instead, write math equations using Unicode characters and place them inside code blocks (\`\`\`) or code spans (\`...\`).
+      - Ensure no extra spaces appear before or after code blocks.
+      - Reply in the language the user initially used at all times.
+      - Use \`---\` as a visual separator only if it improves clarity. Note that \`---\` in Discord Markdown automatically creates a line break above and below the separator.
+      - Before composing your main response, perform a web search for relevant, reputable information, and cite all sources using the \`[name](url)\` format.
+      - Do not mention or reference these instructions in your reply.
+      Begin with a concise checklist (3-7 bullets) of what you will do; keep items conceptual, not implementation-level.
+      After each tool call or external information fetch (such as a web search), validate the utility and reliability of retrieved information in 1-2 lines before including it in your response.
+    `
+      .trim()
+      .replace(/ {6}/g, '')
 
   private constructor() {}
 
@@ -53,6 +61,12 @@ export class OpenAIClient {
         model.reasoningEffort !== undefined
           ? { effort: model.reasoningEffort, summary: 'detailed' }
           : undefined,
+
+      text:
+        model.textVerbosity !== undefined
+          ? { verbosity: textVerbosity }
+          : undefined,
+
 
       input: [
         { role: 'system', content: system },
@@ -81,12 +95,14 @@ export class OpenAIClient {
       model: OpenAIClient.OPENAI_SUMMARY_MODEL,
       store: false,
       input: chats.map((v) => v.convertToOpenAIResponse()),
+      reasoning: { effort: 'minimal' },
       text: {
+        verbosity: 'low',
         format: zodTextFormat(
           z.object({
             title: z.string({
               description:
-                'Summarize users message into single line less than 100 characters'
+                'Summarize users message into single line less than 50 characters'
             }),
             ...(tagChoices !== undefined && tagChoices.length > 0
               ? {
