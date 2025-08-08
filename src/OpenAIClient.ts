@@ -62,7 +62,7 @@ export class OpenAIClient {
           ? { effort: model.reasoningEffort, summary: 'detailed' }
           : undefined,
 
-      verbosity: model.verbosity,
+      text: { verbosity: model.verbosity } as any,
 
       instructions,
       input: chats.map((v) => v.convertToOpenAIResponse()),
@@ -93,8 +93,8 @@ export class OpenAIClient {
       store: false,
       input: chats.map((v) => v.convertToOpenAIResponse()),
       reasoning: { effort: 'minimal' },
-      verbosity: 'low',
       text: {
+        ...{ verbosity: 'low' },
         format: zodTextFormat(
           z.object({
             title: z.string({
