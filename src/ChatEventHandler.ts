@@ -270,10 +270,10 @@ export class ChatEventHandler {
       const futureSlice = intermediateSlice + '\n' + slice
       const isCodeBlockNotFinished =
         intermediateSlice.split('```').length % 2 === 0
-      const maximumFeatureLenght =
+      const maximumFeatureLength =
         this.DISCORD_MESSAGE_LENGTH_MAX - (isCodeBlockNotFinished ? 3 : 0)
 
-      if (futureSlice.length <= maximumFeatureLenght) {
+      if (futureSlice.length <= maximumFeatureLength) {
         intermediateSlice = futureSlice
         continue
       }
@@ -305,20 +305,10 @@ export class ChatEventHandler {
   private async upsertResponseMessage(idx: number, content: string) {
     const alreadySentMessage = this.alreadySentMessages[idx]
 
-    if (alreadySentMessage === undefined) {
-      const sentMessage = await this.channel.send(content)
-      this.alreadySentMessages.push(sentMessage)
-
-      return
-    }
-
     const newContents = content.split('---').map((v) => v.trim())
     const oldContents = alreadySentMessage.components
       .filter((v) => v.type === ComponentType.TextDisplay)
       .map((v) => v.content.trim())
-
-    const isSame = newContents.every((v, i) => oldContents[i] === v)
-    if (isSame) return
 
     const components = newContents
       .filter((content) => content.length > 0)
@@ -331,6 +321,22 @@ export class ChatEventHandler {
       ])
       .flat()
       .slice(0, -1)
+
+    if (alreadySentMessage === undefined) {
+      const sentMessage = await this.channel.send({
+        flags: [MessageFlags.IsComponentsV2],
+        components,
+        allowedMentions: {
+          repliedUser: false
+        }
+      })
+
+      this.alreadySentMessages.push(sentMessage)
+      return
+    }
+
+    const isSame = newContents.every((v, i) => oldContents[i] === v)
+    if (isSame) return
 
     await alreadySentMessage.edit({
       flags: [MessageFlags.IsComponentsV2],
