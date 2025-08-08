@@ -72,8 +72,8 @@ export const MODELS: Record<string, Model> = {
   },
   'gpt-5-nano': {
     id: 'gpt-5-nano',
-    label: 'GPT-5 nano (웹 검색 x)',
-    description: '답변 생성이 매우 빨라 단순한 자동완성 등에 적합',
+    label: 'GPT-5 nano',
+    description: '[검색x] 답변 생성이 매우 빨라 단순한 자동완성 등에 적합',
     tools: [],
     emoji: '⚡',
     cost: {
