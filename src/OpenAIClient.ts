@@ -46,10 +46,10 @@ export class OpenAIClient {
     apiKey: OpenAIClient.OPENAI_API_KEY
   })
 
-  public async startCompletion(model: Model, chats: Chat[], userIdent: number) {
+  public async startCompletion(model: Model, chats: Chat[], cacheKey: number) {
     logger.info('Start generating response...')
 
-    const system = OpenAIClient.OPENAI_DEFAULT_PROMPT + '\n' + model.system
+    const instructions = OpenAIClient.OPENAI_DEFAULT_PROMPT + '\n' + model.system
     const rawStream = await this.client.responses.create({
       store: true,
       stream: true,
@@ -62,21 +62,18 @@ export class OpenAIClient {
           ? { effort: model.reasoningEffort, summary: 'detailed' }
           : undefined,
 
-      text:
-        model.textVerbosity !== undefined
-          ? { verbosity: textVerbosity }
-          : undefined,
+      verbosity: model.verbosity,
 
-
-      input: [
-        { role: 'system', content: system },
-        ...chats.map((v) => v.convertToOpenAIResponse())
-      ],
+      instructions,
+      input: chats.map((v) => v.convertToOpenAIResponse()),
 
       tool_choice: model.toolRequired === true ? 'required' : 'auto',
       truncation: 'auto',
 
-      user: userIdent.toString()
+      parallel_tool_calls: true,
+
+      safety_identifier: cacheKey.toString(),
+      prompt_cache_key: cacheKey.toString()
     })
 
     return new OpenAIStream(rawStream).createBufferedCompletionStream()

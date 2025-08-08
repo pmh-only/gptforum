@@ -14,7 +14,7 @@ export interface Model {
   tools: string[]
   toolRequired?: boolean
   reasoningEffort?: ReasoningEffort
-  textVerbosity?: 'low' | 'medium' | 'high'
+  verbosity?: 'low' | 'medium' | 'high'
   system?: string
   cost: {
     input: number // in dollar
@@ -37,7 +37,7 @@ export const MODELS: Record<string, Model> = {
       output: 10
     },
     reasoningEffort: 'high',
-    textVerbosity: 'high',
+    verbosity: 'high',
     freeTier: ModelFreeTier.NORMAL_QUOTA
   },
   'gpt-5-medium': {
@@ -52,7 +52,7 @@ export const MODELS: Record<string, Model> = {
       output: 10
     },
     reasoningEffort: 'medium',
-    textVerbosity: 'high',
+    verbosity: 'high',
     freeTier: ModelFreeTier.NORMAL_QUOTA
   },
   'gpt-5-mini': {
@@ -67,7 +67,7 @@ export const MODELS: Record<string, Model> = {
       output: 2
     },
     reasoningEffort: 'medium',
-    textVerbosity: 'high',
+    verbosity: 'high',
     freeTier: ModelFreeTier.MINI_QUOTA
   },
   'gpt-5-nano': {
@@ -82,7 +82,7 @@ export const MODELS: Record<string, Model> = {
       output: 0.4
     },
     reasoningEffort: 'minimal',
-    textVerbosity: 'high',
+    verbosity: 'high',
     freeTier: ModelFreeTier.MINI_QUOTA
   }
 }
