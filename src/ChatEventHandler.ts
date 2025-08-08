@@ -306,10 +306,6 @@ export class ChatEventHandler {
     const alreadySentMessage = this.alreadySentMessages[idx]
 
     const newContents = content.split('---').map((v) => v.trim())
-    const oldContents = alreadySentMessage.components
-      .filter((v) => v.type === ComponentType.TextDisplay)
-      .map((v) => v.content.trim())
-
     const components = newContents
       .filter((content) => content.length > 0)
       .map((content) => [
@@ -334,6 +330,10 @@ export class ChatEventHandler {
       this.alreadySentMessages.push(sentMessage)
       return
     }
+    
+    const oldContents = alreadySentMessage.components
+      .filter((v) => v.type === ComponentType.TextDisplay)
+      .map((v) => v.content.trim())
 
     const isSame = newContents.every((v, i) => oldContents[i] === v)
     if (isSame) return
