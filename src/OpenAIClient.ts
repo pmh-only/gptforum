@@ -93,8 +93,8 @@ export class OpenAIClient {
       store: false,
       input: chats.map((v) => v.convertToOpenAIResponse()),
       reasoning: { effort: 'minimal' },
+      verbosity: 'low',
       text: {
-        verbosity: 'low',
         format: zodTextFormat(
           z.object({
             title: z.string({
