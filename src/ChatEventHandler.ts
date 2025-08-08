@@ -237,15 +237,15 @@ export class ChatEventHandler {
           (streamData.metadata !== undefined
             ? '---\n' +
               `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
-              `> 입력: ${streamData.metadata.inputToken} 토큰 (${cost.input.toFixed(4)}$)\n` +
+              `> 입력: ${streamData.metadata.inputToken.toLocaleString('en-US')} 토큰 (${cost.input.toFixed(4)}$)\n` +
               (streamData.metadata.inputCachedToken > 0
-                ? `> 캐시: ${streamData.metadata.inputCachedToken} 토큰 (${cost.cachedInput.toFixed(4)}$)\n`
+                ? `> 캐시: ${streamData.metadata.inputCachedToken.toLocaleString('en-US')} 토큰 (${cost.cachedInput.toFixed(4)}$)\n`
                 : '') +
               (streamData.metadata.reasoningToken > 0
-                ? `> 생각: ${streamData.metadata.reasoningToken} 토큰 (${cost.reasoning.toFixed(4)}$)\n`
+                ? `> 생각: ${streamData.metadata.reasoningToken.toLocaleString('en-US')} 토큰 (${cost.reasoning.toFixed(4)}$)\n`
                 : '') +
-              `> 출력: ${streamData.metadata.outputToken} 토큰 (${cost.output.toFixed(4)}$)\n` +
-              `> 총합: ${streamData.metadata.totalToken} 토큰 (${totalCost.toFixed(4)}$)` +
+              `> 출력: ${streamData.metadata.outputToken.toLocaleString('en-US')} 토큰 (${cost.output.toFixed(4)}$)\n` +
+              `> 총합: ${streamData.metadata.totalToken.toLocaleString('en-US')} 토큰 (${totalCost.toFixed(4)}$)` +
               (this.isStarter
                 ? '\n\n' +
                   '> **Commands** \n' +
