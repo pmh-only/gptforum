@@ -12,26 +12,19 @@ import {
 import { Conversation } from './Conversation'
 import { NotFoundError } from './Errors'
 import { OpenAIClient } from './OpenAIClient'
-import { OpenAIStreamData } from './OpenAIStream'
 import { Chat } from './Chat'
 import { ModelSelection } from './ModelSelection'
 import { logger } from './Logger'
 import { Model, MODELS } from './Models'
 import { TierQuotaManager } from './TierQuotaManager'
+import { OpenAIRenderedStream } from './OpenAIRenderedStream'
+import { OpenAIStreamData } from './OpenAIStreamData'
 
 export class ChatEventHandler {
   private static DISCORD_CHANNEL =
     process.env.DISCORD_CHANNEL ??
     logger.error('DISCORD_CHANNEL NOT PROVIDED') ??
     process.exit(-1)
-
-  private static DISCORD_LOADING_EMOJI_PLACEHOLDER =
-    process.env.DISCORD_LOADING_EMOJI_PLACEHOLDER ??
-    logger.warn(
-      'Loading animated emoji not provided. ' +
-        'you can download loading gif from internet and provide emoji id like DISCORD_LOADING_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
-    ) ??
-    '<a:loading:1381148556462653490>'
 
   public static async handleMessageCreate(message: Message) {
     if (message.channel.type !== ChannelType.PublicThread) return
@@ -107,7 +100,7 @@ export class ChatEventHandler {
     }
 
     if (!isCommandProvided)
-      await this.conversation.addDiscordMesssage(this.message)
+      await this.conversation.addDiscordMessage(this.message)
 
     if (this.conversation.isEditMode) return
 
@@ -130,15 +123,23 @@ export class ChatEventHandler {
       this.conversation.id
     )
 
-    const response = await this.iterateOverCompletionStream(
-      model,
-      completionStream
-    )
+    const renderer = new OpenAIRenderedStream(completionStream, model)
+    let lastData: OpenAIStreamData | undefined
 
-    await this.conversation.addOpenAIResponse(response.message)
+    for await (const {renderedText, lastData: tempLastData } of renderer.createRenderedStream()) {
+      await this.respondMessage(renderedText)
+      lastData = tempLastData
+    }
+
+    if (lastData === undefined) {
+      logger.error('Received empty result buffer. Skipping response.')
+      return
+    }
+
+    await this.conversation.addOpenAIResponse(lastData.output)
     await this.tierQuota.addQuotaUsage(
       model.freeTier,
-      response.metadata?.totalToken ?? 0
+      lastData.metadata?.totalToken ?? 0
     )
   }
 
@@ -192,9 +193,7 @@ export class ChatEventHandler {
     this.alreadySentMessages[0] = await this.message.reply({
       components: [
         new TextDisplayBuilder()
-          .setContent(
-            `> ${ChatEventHandler.DISCORD_LOADING_EMOJI_PLACEHOLDER} 생각중...`
-          )
+          .setContent(`> 준비 중...`)
           .toJSON()
       ],
       flags: [MessageFlags.IsComponentsV2],
@@ -202,66 +201,6 @@ export class ChatEventHandler {
         repliedUser: false
       }
     })
-  }
-
-  private async iterateOverCompletionStream(
-    model: Model,
-    stream: AsyncGenerator<OpenAIStreamData>
-  ) {
-    let response: OpenAIStreamData | undefined
-
-    for await (const streamData of stream) {
-      response = streamData
-
-      if (streamData.message.length === 0 && streamData.isGenerating) {
-        continue
-      }
-
-      const cost = {
-        input:
-          (streamData.metadata?.inputToken ?? 0 * model.cost.input) / 1_000_000,
-        cachedInput:
-          (streamData.metadata?.inputCachedToken ??
-            0 * model.cost.cached_input) / 1_000_000,
-        reasoning:
-          (streamData.metadata?.reasoningToken ?? 0 * model.cost.output) /
-          1_000_000,
-        output:
-          (streamData.metadata?.outputToken ?? 0 * model.cost.output) /
-          1_000_000
-      }
-
-      const totalCost = Object.values(cost).reduce(
-        (prev, curr) => prev + curr,
-        0
-      )
-
-      await this.respondMessage(
-        `${streamData.message}${streamData.isGenerating ? '⬤' : ''}` +
-          (streamData.metadata !== undefined
-            ? '---\n' +
-              `> **${streamData.metadata.model}** ${streamData.metadata.isWebSearchEnabled ? '(:globe_with_meridians: 검색 활성화됨)' : ''}\n` +
-              `> 입력: ${streamData.metadata.inputToken.toLocaleString('en-US')} 토큰 (${cost.input.toFixed(4)}$)\n` +
-              (streamData.metadata.inputCachedToken > 0
-                ? `> 캐시: ${streamData.metadata.inputCachedToken.toLocaleString('en-US')} 토큰 (${cost.cachedInput.toFixed(4)}$)\n`
-                : '') +
-              (streamData.metadata.reasoningToken > 0
-                ? `> 생각: ${streamData.metadata.reasoningToken.toLocaleString('en-US')} 토큰 (${cost.reasoning.toFixed(4)}$)\n`
-                : '') +
-              `> 출력: ${streamData.metadata.outputToken.toLocaleString('en-US')} 토큰 (${cost.output.toFixed(4)}$)\n` +
-              `> 총합: ${streamData.metadata.totalToken.toLocaleString('en-US')} 토큰 (${totalCost.toFixed(4)}$)` +
-              (this.isStarter
-                ? '\n\n' +
-                  '> **Commands** \n' +
-                  '> `/model`: 모델 변경\n' +
-                  '> `/editor`: 에디터 모드 토글 (메시지를 모아두었다가 한번에 요청)\n' +
-                  '> `//...` 혹은 `#...`: 메시지를 무시합니다\n'
-                : '')
-            : '')
-      )
-    }
-
-    return response as OpenAIStreamData
   }
 
   private sliceStringByDiscordLimit(str: string): string[] {

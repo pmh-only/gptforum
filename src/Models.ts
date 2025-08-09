@@ -66,7 +66,7 @@ export const MODELS: Record<string, Model> = {
       cached_input: 0.025,
       output: 2
     },
-    reasoningEffort: 'medium',
+    reasoningEffort: 'low',
     verbosity: 'high',
     freeTier: ModelFreeTier.MINI_QUOTA
   },

@@ -53,7 +53,7 @@ export class Conversation implements ConversationEntity {
     return new Conversation(conversation)
   }
 
-  public async addDiscordMesssage(message: Message) {
+  public async addDiscordMessage(message: Message) {
     const channel = message.channel as ForumThreadChannel
 
     await prisma.chat.create({

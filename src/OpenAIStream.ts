@@ -1,51 +1,56 @@
 import { Stream } from 'openai/streaming'
 import { ResponseStreamEvent } from 'openai/resources/responses/responses'
 import { logger } from './Logger'
-
-export interface OpenAIStreamData {
-  message: string
-  isGenerating: boolean
-  metadata?: {
-    model: string
-    isWebSearchEnabled: boolean
-    inputToken: number
-    inputCachedToken: number
-    reasoningToken: number
-    outputToken: number
-    totalToken: number
-  }
-}
+import { OpenAIStreamData, OpenAIStreamDataItemType } from './OpenAIStreamData'
 
 export class OpenAIStream {
   constructor(private readonly rawStream: Stream<ResponseStreamEvent>) {}
 
-  private readonly BUFFER_SECOND =
-    parseInt(process.env.BUFFER_SECOND ?? '2') || 2
-
-  private static DISCORD_REASONING_EMOJI_PLACEHOLDER =
-    process.env.DISCORD_REASONING_EMOJI_PLACEHOLDER ??
-    logger.warn(
-      'Reasoning animated emoji not provided. ' +
-        'you can download thinking gif from internet and provide emoji id like DISCORD_REASONING_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
-    ) ??
-    ':bulb:'
-
   public async *createBufferedCompletionStream(): AsyncGenerator<OpenAIStreamData> {
-    const buffer: string[] = []
     const output: OpenAIStreamData = {
-      message: '',
+      items: [],
+      output: '',
+      refusal: '',
       isGenerating: true
     }
 
-    let bufferFlushedAt = Date.now()
-
     for await (const chunk of this.rawStream) {
-      if (chunk.type === 'response.output_text.delta') buffer.push(chunk.delta)
-      if (chunk.type === 'response.reasoning_summary_text.done')
-        buffer.push(
-          `> ${OpenAIStream.DISCORD_REASONING_EMOJI_PLACEHOLDER} **생각**: ` +
-            `${chunk.text.split('\n').join('\n> ')}\n\n`
-        )
+      if (chunk.type === 'response.output_text.delta')
+        output.output += chunk.delta
+
+      if (chunk.type === 'response.output_text.done')
+        output.output = chunk.text
+
+      if (chunk.type === 'response.refusal.delta')
+        output.refusal += chunk.delta
+
+      if (chunk.type === 'response.refusal.done')
+        output.refusal = chunk.refusal
+
+      if (chunk.type === 'response.reasoning_summary_text.delta') {
+        if (output.items[chunk.output_index] === undefined) {
+          output.items[chunk.output_index] = {
+            type: OpenAIStreamDataItemType.REASONING,
+            text: '',
+            isGenerating: true
+          }
+        }
+
+        output.items[chunk.output_index].text += chunk.delta
+      }
+
+      if (chunk.type === 'response.reasoning_summary_text.done') {
+        if (output.items[chunk.output_index] === undefined) {
+          output.items[chunk.output_index] = {
+            type: OpenAIStreamDataItemType.REASONING,
+            text: '',
+            isGenerating: false
+          }
+        }
+
+        output.items[chunk.output_index].text = chunk.text
+        output.items[chunk.output_index].isGenerating = false
+      }
 
       if (chunk.type === 'response.completed') {
         output.metadata = {
@@ -67,17 +72,10 @@ export class OpenAIStream {
         }
       }
 
-      if (Date.now() - bufferFlushedAt > this.BUFFER_SECOND * 1000) {
-        bufferFlushedAt = Date.now()
-        output.message = buffer.join('')
-
-        yield output
-      }
+      yield output
     }
 
-    output.message = buffer.join('')
     output.isGenerating = false
-
     logger.info('Response stream finished')
 
     yield output
