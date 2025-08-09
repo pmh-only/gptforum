@@ -213,6 +213,10 @@ export class ChatEventHandler {
     for await (const streamData of stream) {
       response = streamData
 
+      if (streamData.message.length === 0 && streamData.isGenerating) {
+        continue
+      }
+
       const cost = {
         input:
           (streamData.metadata?.inputToken ?? 0 * model.cost.input) / 1_000_000,
