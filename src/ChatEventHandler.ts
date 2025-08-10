@@ -126,7 +126,10 @@ export class ChatEventHandler {
     const renderer = new OpenAIRenderedStream(completionStream, model)
     let lastData: OpenAIStreamData | undefined
 
-    for await (const {renderedText, lastData: tempLastData } of renderer.createRenderedStream()) {
+    const renderedStream = renderer.createRenderedStream()
+    void renderer.startRendering()
+
+    for await (const { text: renderedText, data: tempLastData } of renderedStream) {
       await this.respondMessage(renderedText)
       lastData = tempLastData
     }
