@@ -76,7 +76,7 @@ export class OpenAIClient {
       prompt_cache_key: cacheKey.toString()
     })
 
-    return new OpenAIStream(rawStream).createBufferedCompletionStream()
+    return new OpenAIStream(rawStream!).createBufferedCompletionStream()
   }
 
   public async startGeneratingSummary(

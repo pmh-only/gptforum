@@ -59,7 +59,7 @@ export class Conversation implements ConversationEntity {
     await prisma.chat.create({
       data: {
         content:
-          ((await this.getIsStarter()) ? channel.name : '') + message.content,
+          ((await this.getIsStarter()) ? `# ${channel.name}\n` : '') + message.content,
         type: ChatType.USER,
         conversationId: this.id
       }

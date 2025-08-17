@@ -29,7 +29,7 @@ export class OpenAIRenderedStream {
     ':globe_with_meridians:'
 
   private static readonly RENDERER_BUFFER_SECOND =
-    parseInt(process.env.RENDERER_BUFFER_SECOND ?? '1') || 1
+    parseInt(process.env.RENDERER_BUFFER_SECOND ?? '1') ?? 1
 
   constructor (
     private readonly openAIStream: AsyncGenerator<OpenAIStreamData>,
@@ -52,8 +52,10 @@ export class OpenAIRenderedStream {
       if (this.data.isGenerating === false)
         break
 
-      if (lastTextFlushed === this.text)
+      if (lastTextFlushed === this.text) {
+        await this.sleep(OpenAIRenderedStream.RENDERER_BUFFER_SECOND * 1000)
         continue
+      }
 
       lastTextFlushed = this.text
 
@@ -170,5 +172,5 @@ export class OpenAIRenderedStream {
   private readonly sleep =
     (ms: number) =>
     new Promise((resolve) =>
-      setTimeout(resolve.bind(this), ms))
+      setTimeout(() => resolve(undefined), ms))
 }

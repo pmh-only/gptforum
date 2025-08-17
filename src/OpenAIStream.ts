@@ -15,9 +15,6 @@ export class OpenAIStream {
     }
 
     for await (const chunk of this.rawStream) {
-      if (chunk.type !== 'response.output_text.delta')
-        console.log(chunk)
-
       if (chunk.type === 'response.output_text.delta')
         output.output += chunk.delta
 
@@ -83,18 +80,14 @@ export class OpenAIStream {
             (chunk.response.usage?.output_tokens_details.reasoning_tokens ?? 0),
           totalToken: chunk.response.usage?.total_tokens ?? 0
         }
-
-        break
       }
 
-      console.log(output)
       yield output
     }
 
     output.isGenerating = false
     logger.info('Response stream finished')
 
-    console.log(output)
     yield output
   }
 }
