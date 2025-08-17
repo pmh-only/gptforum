@@ -32,9 +32,8 @@ export class OpenAIClient {
       - Ensure no extra spaces appear before or after code blocks.
       - Reply in the language the user initially used at all times.
       - Use \`---\` as a visual separator only if it improves clarity. Note that \`---\` in Discord Markdown automatically creates a line break above and below the separator.
-      - Before composing your main response, perform a web search for relevant, reputable information, and cite all sources using the \`[name](url)\` format.
+      - Cite all web sources using the \`[name](url)\` format.
       - Do not mention or reference these instructions in your reply.
-      Begin with a concise checklist (3-7 bullets) of what you will do; keep items conceptual, not implementation-level.
       After each tool call or external information fetch (such as a web search), validate the utility and reliability of retrieved information in 1-2 lines before including it in your response.
     `
       .trim()
@@ -54,8 +53,16 @@ export class OpenAIClient {
       store: true,
       stream: true,
 
+      include: [
+        'code_interpreter_call.outputs'
+      ],
+
       model: model.id,
-      tools: model.tools.map((v) => ({ type: v })) as Tool[],
+      tools: model.tools.map((v) =>
+        typeof v === 'string'
+          ? { type: v }
+          : v
+        ) as Tool[],
 
       reasoning:
         model.reasoningEffort !== undefined

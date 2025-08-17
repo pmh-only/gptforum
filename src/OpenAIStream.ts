@@ -1,7 +1,7 @@
 import { Stream } from 'openai/streaming'
 import { ResponseStreamEvent } from 'openai/resources/responses/responses'
 import { logger } from './Logger'
-import { OpenAIStreamData, OpenAIStreamDataItemReasoning, OpenAIStreamDataItemSearching, OpenAIStreamDataItemType } from './OpenAIStreamData'
+import { OpenAIStreamData, OpenAIStreamDataItemCodeInterprete, OpenAIStreamDataItemReasoning, OpenAIStreamDataItemSearching, OpenAIStreamDataItemType } from './OpenAIStreamData'
 
 export class OpenAIStream {
   constructor(private readonly rawStream: Stream<ResponseStreamEvent>) {}
@@ -15,6 +15,9 @@ export class OpenAIStream {
     }
 
     for await (const chunk of this.rawStream) {
+      if (typeof process.env.VERBOSE === 'string')
+        logger.verbose(JSON.stringify(chunk))
+
       if (chunk.type === 'response.output_text.delta')
         output.output += chunk.delta
 
@@ -41,6 +44,14 @@ export class OpenAIStream {
             query: '',
             isGenerating: true
           }
+        
+        if (chunk.item.type === 'code_interpreter_call')
+          output.items[chunk.output_index] = {
+            type: OpenAIStreamDataItemType.CODE_INTERPRETE,
+            code: '',
+            output: '',
+            isGenerating: true
+          }
       }
 
       if (chunk.type === 'response.output_item.done') {
@@ -50,6 +61,12 @@ export class OpenAIStream {
         if (chunk.item.type === 'web_search_call')
           (output.items[chunk.output_index] as OpenAIStreamDataItemSearching)
             .query = (chunk.item as any).action.query
+
+        if (chunk.item.type === 'code_interpreter_call')
+          (output.items[chunk.output_index] as OpenAIStreamDataItemCodeInterprete)
+            .output = (chunk.item as any).outputs
+              .filter((v: any) => v.type === 'logs')
+              .map((v: any) => v.logs).join('\n> ')
 
         output.items[chunk.output_index].isGenerating = false
       }
@@ -61,6 +78,14 @@ export class OpenAIStream {
       if (chunk.type === 'response.reasoning_summary_text.done')
         (output.items[chunk.output_index] as OpenAIStreamDataItemReasoning)
           .text = chunk.text
+  
+      if (chunk.type === 'response.code_interpreter_call_code.delta')
+        (output.items[chunk.output_index] as OpenAIStreamDataItemCodeInterprete)
+          .code += chunk.delta
+
+      if (chunk.type === 'response.code_interpreter_call_code.done')
+        (output.items[chunk.output_index] as OpenAIStreamDataItemCodeInterprete)
+          .code = chunk.code
 
       if (chunk.type === 'response.completed') {
         output.metadata = {

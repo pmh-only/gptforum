@@ -1,3 +1,4 @@
+import { Tool } from 'openai/resources/responses/responses'
 import { ReasoningEffort } from 'openai/resources/shared'
 
 export enum ModelFreeTier {
@@ -11,7 +12,7 @@ export interface Model {
   label: string
   description: string
   emoji: string
-  tools: string[]
+  tools: Array<string | Tool>
   toolRequired?: boolean
   reasoningEffort?: ReasoningEffort
   verbosity?: 'low' | 'medium' | 'high'
@@ -30,7 +31,13 @@ export const MODELS: Record<string, Model> = {
     label: 'GPT-5 (high)',
     description: '생각하는데 더 많은 시간을 투자하여 전문적인 주제에 적합',
     emoji: '🔬',
-    tools: ['web_search_preview'],
+    tools: [
+      'web_search_preview',
+      {
+        type: 'code_interpreter',
+        container: { type: "auto" }
+      }
+    ],
     cost: {
       input: 1.25,
       cached_input: 0.125,
@@ -45,7 +52,13 @@ export const MODELS: Record<string, Model> = {
     label: 'GPT-5 (medium)',
     description: '적당한 시간을 투자하여 복잡한 문제를 해결하는데 적합',
     emoji: '🤔',
-    tools: ['web_search_preview'],
+    tools: [
+      'web_search_preview',
+      {
+        type: 'code_interpreter',
+        container: { type: "auto" }
+      }
+    ],
     cost: {
       input: 1.25,
       cached_input: 0.125,
@@ -60,7 +73,13 @@ export const MODELS: Record<string, Model> = {
     label: 'GPT-5 mini',
     description: '조금의 시간을 투자하여 간단한 문제를 해결하는데 적합',
     emoji: '🔍',
-    tools: ['web_search_preview'],
+    tools: [
+      'web_search_preview',
+      {
+        type: 'code_interpreter',
+        container: { type: "auto" }
+      }
+    ],
     cost: {
       input: 0.25,
       cached_input: 0.025,
@@ -74,14 +93,19 @@ export const MODELS: Record<string, Model> = {
     id: 'gpt-5-nano',
     label: 'GPT-5 nano',
     description: '[검색x] 답변 생성이 매우 빨라 단순한 자동완성 등에 적합',
-    tools: [],
+    tools: [
+      {
+        type: 'code_interpreter',
+        container: { type: 'auto' }
+      }
+    ],
     emoji: '⚡',
     cost: {
       input: 0.05,
       cached_input: 0.005,
       output: 0.4
     },
-    reasoningEffort: 'minimal',
+    reasoningEffort: 'low',
     verbosity: 'high',
     freeTier: ModelFreeTier.MINI_QUOTA
   }

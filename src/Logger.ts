@@ -11,6 +11,9 @@ export class Logger {
 
   // ---
 
+  public readonly verbose = (...data: unknown[]) =>
+    this.log(chalk.bgGray('  vrb '), ...data)
+
   public readonly info = (...data: unknown[]) =>
     this.log(chalk.bgCyan(' info '), ...data)
 
@@ -18,7 +21,7 @@ export class Logger {
     this.log(chalk.bgYellow(' warn '), ...data)
 
   public readonly error = (...data: unknown[]) =>
-    this.log(chalk.bgRed(' error '), ...data)
+    this.log(chalk.bgRed(' err  '), ...data)
 
   private log(type: string, ...data: unknown[]) {
     const date = new Date().toISOString()

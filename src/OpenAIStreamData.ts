@@ -1,11 +1,13 @@
 export enum OpenAIStreamDataItemType {
   REASONING = 'REASONING',
-  SEARCHING = 'SEARCHING'
+  SEARCHING = 'SEARCHING',
+  CODE_INTERPRETE = 'CODE_INTERPRETE'
 }
 
 export const OpenAIStreamDataItemTypeLabel: Record<OpenAIStreamDataItemType, string> = {
   [OpenAIStreamDataItemType.REASONING]: '생각',
-  [OpenAIStreamDataItemType.SEARCHING]: '웹 검색'
+  [OpenAIStreamDataItemType.SEARCHING]: '웹 검색',
+  [OpenAIStreamDataItemType.CODE_INTERPRETE]: '코드 실행'
 }
 
 export interface OpenAIStreamData {
@@ -18,7 +20,8 @@ export interface OpenAIStreamData {
 
 export type OpenAIStreamDataItem =
   OpenAIStreamDataItemReasoning |
-  OpenAIStreamDataItemSearching
+  OpenAIStreamDataItemSearching |
+  OpenAIStreamDataItemCodeInterprete
 
 export interface OpenAIStreamDataItemReasoning {
   type: OpenAIStreamDataItemType.REASONING
@@ -29,6 +32,13 @@ export interface OpenAIStreamDataItemReasoning {
 export interface OpenAIStreamDataItemSearching {
   type: OpenAIStreamDataItemType.SEARCHING
   query: string
+  isGenerating: boolean
+}
+
+export interface OpenAIStreamDataItemCodeInterprete {
+  type: OpenAIStreamDataItemType.CODE_INTERPRETE,
+  code: string
+  output: string
   isGenerating: boolean
 }
 

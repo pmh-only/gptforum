@@ -1,6 +1,6 @@
 import { logger } from "./Logger"
 import { Model } from "./Models"
-import { OpenAIStreamData, OpenAIStreamDataItem, OpenAIStreamDataItemReasoning, OpenAIStreamDataItemSearching, OpenAIStreamDataItemType, OpenAIStreamDataItemTypeLabel, OpenAIStreamDataMetadata } from "./OpenAIStreamData"
+import { OpenAIStreamData, OpenAIStreamDataItem, OpenAIStreamDataItemCodeInterprete, OpenAIStreamDataItemReasoning, OpenAIStreamDataItemSearching, OpenAIStreamDataItemType, OpenAIStreamDataItemTypeLabel, OpenAIStreamDataMetadata } from "./OpenAIStreamData"
 
 export class OpenAIRenderedStream {  
   private static readonly DISCORD_LOADING_EMOJI_PLACEHOLDER =
@@ -18,7 +18,6 @@ export class OpenAIRenderedStream {
         'you can download thinking gif from internet and provide emoji id like DISCORD_REASONING_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
     ) ??
     ':bulb:'
-
     
   private static readonly DISCORD_SEARCHING_EMOJI_PLACEHOLDER =
     process.env.DISCORD_SEARCHING_EMOJI_PLACEHOLDER ??
@@ -27,6 +26,14 @@ export class OpenAIRenderedStream {
         'you can download thinking gif from internet and provide emoji id like DISCORD_SEARCHING_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
     ) ??
     ':globe_with_meridians:'
+
+  private static readonly DISCORD_CODE_INTERPRETE_EMOJI_PLACEHOLDER =
+    process.env.DISCORD_CODE_INTERPRETE_EMOJI_PLACEHOLDER ??
+    logger.warn(
+      'Code interpreter animated emoji not provided. ' +
+        'you can download thinking gif from internet and provide emoji id like DISCORD_CODE_INTERPRETE_EMOJI_PLACEHOLDER=<a:loading:1381148556462653490>'
+    ) ??
+    ':technologist:'
 
   private static readonly RENDERER_BUFFER_SECOND =
     parseInt(process.env.RENDERER_BUFFER_SECOND ?? '1') ?? 1
@@ -109,6 +116,9 @@ export class OpenAIRenderedStream {
         if (item.type === OpenAIStreamDataItemType.SEARCHING)
           return this.searchingItemToString(item)
 
+        if (item.type === OpenAIStreamDataItemType.CODE_INTERPRETE)
+          return this.codeInterpreteItemToString(item)
+
         return ''
       })
       .map((v) => v.trim().split('\n').map((v) => '> ' + v.trim() + '\u2800').join('\n'))
@@ -128,6 +138,15 @@ export class OpenAIRenderedStream {
       `${item.isGenerating ? OpenAIRenderedStream.DISCORD_LOADING_EMOJI_PLACEHOLDER : OpenAIRenderedStream.DISCORD_SEARCHING_EMOJI_PLACEHOLDER} ` +
       `**${OpenAIStreamDataItemTypeLabel[item.type]} ${item.isGenerating ? '중' : '완료'}**` +
       `${item.query.length > 0 ? ':' : ''} ${item.query}`
+    )
+  }
+
+  private codeInterpreteItemToString(item: OpenAIStreamDataItemCodeInterprete): string {
+    return (
+      `${item.isGenerating ? OpenAIRenderedStream.DISCORD_LOADING_EMOJI_PLACEHOLDER : OpenAIRenderedStream.DISCORD_CODE_INTERPRETE_EMOJI_PLACEHOLDER} ` +
+      `**${OpenAIStreamDataItemTypeLabel[item.type]} ${item.isGenerating ? '중' : '완료'}**` +
+      '```' + item.code + '```\n' +
+      '```> ' + item.output + '```'
     )
   }
 
